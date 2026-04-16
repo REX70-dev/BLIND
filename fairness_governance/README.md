@@ -4,7 +4,7 @@ An end-to-end Python and Streamlit system for bias detection, mitigation, counte
 
 ## Run
 
-Use Python 3.11 or 3.12. Python 3.14 is not recommended for this project
+Use Python 3.11 or 3.12. Python 3.14 is not supported for this project
 because Fairlearn currently resolves to a SciPy build that may need a local C/C++
 compiler on Windows.
 
@@ -53,6 +53,19 @@ The app works with an uploaded CSV or the built-in generated credit dataset. For
 - Sensitive attribute: `sensitive_group`
 - Fairness metric: `Demographic Parity` or `Equal Opportunity`
 - Epsilon: `0.01` to `0.10`
+
+## Streamlit Community Cloud
+
+Use these deployment settings:
+
+- Repository: `REX70-dev/BLIND`
+- Branch: `main`
+- Main file path: `fairness_governance/app.py`
+- Python version: `3.12`
+
+Set Python 3.12 from the Streamlit Cloud app's **Advanced settings**. If the
+app was already created with Python 3.14, delete it and redeploy with Python
+3.12 selected. Streamlit Community Cloud selects the Python version in the UI.
 
 ## Architecture
 

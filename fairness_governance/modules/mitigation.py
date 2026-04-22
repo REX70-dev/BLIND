@@ -38,6 +38,34 @@ class PreprocessedFairlearnModel(BaseEstimator, ClassifierMixin):
         return np.vstack([1 - preds, preds]).T
 
 
+class GroupAwareThresholdModel(BaseEstimator, ClassifierMixin):
+    """Apply learned per-group thresholds after a fitted fairness model.
+
+    ExponentiatedGradient is still the core optimizer. This calibration layer
+    makes the demo impact clearer for Demographic Parity by aligning group
+    selection rates using thresholds learned from the training split.
+    """
+
+    def __init__(self, base_model, sensitive_col: str, thresholds: dict, default_threshold: float = 0.5):
+        self.base_model = base_model
+        self.sensitive_col = sensitive_col
+        self.thresholds = thresholds
+        self.default_threshold = default_threshold
+
+    def predict_proba(self, x):
+        return self.base_model.predict_proba(x)
+
+    def predict(self, x):
+        probs = np.asarray(self.predict_proba(x))[:, -1]
+        if self.sensitive_col not in x.columns:
+            return (probs >= self.default_threshold).astype(int)
+        groups = x[self.sensitive_col].astype(str).to_numpy()
+        thresholds = np.asarray(
+            [self.thresholds.get(group, self.default_threshold) for group in groups]
+        )
+        return (probs >= thresholds).astype(int)
+
+
 def reweighting_weights(sensitive: pd.Series) -> pd.Series:
     """Assign inverse-frequency sample weights by sensitive group."""
     counts = sensitive.astype(str).value_counts()
@@ -71,11 +99,11 @@ def train_fairlearn_constraint_model(artifacts, metric_key: str, epsilon: float)
 
     preprocessor = make_preprocessor(artifacts.x_train)
     x_train_pre = preprocessor.fit_transform(artifacts.x_train)
-    constraint = (
-        TruePositiveRateParity(difference_bound=epsilon)
-        if metric_key == "equal_opportunity"
-        else DemographicParity(difference_bound=epsilon)
-    )
+    # Fairlearn reductions implement the Lagrangian-style constrained
+    # optimization by repeatedly reweighting training distributions. Smaller
+    # eps values put more pressure on fairness; larger eps values preserve more
+    # accuracy when the unconstrained optimum is biased.
+    constraint = make_reduction_constraint(metric_key, epsilon)
     estimator = LogisticRegression(max_iter=1000)
     mitigator = ExponentiatedGradient(estimator, constraints=constraint, eps=epsilon)
     try:
@@ -83,17 +111,75 @@ def train_fairlearn_constraint_model(artifacts, metric_key: str, epsilon: float)
     except Exception:
         return _fallback_group_threshold_model(artifacts, metric_key)
     wrapped = PreprocessedFairlearnModel(preprocessor, mitigator)
-    preds = pd.Series(wrapped.predict(artifacts.x_test), index=artifacts.x_test.index)
+    calibrated = _calibrate_group_thresholds(
+        wrapped,
+        artifacts.x_train,
+        artifacts.y_train,
+        artifacts.a_train,
+        metric_key,
+    )
+    preds = pd.Series(calibrated.predict(artifacts.x_test), index=artifacts.x_test.index)
     probs = pd.Series(
-        np.asarray(wrapped.predict_proba(artifacts.x_test))[:, -1],
+        np.asarray(calibrated.predict_proba(artifacts.x_test))[:, -1],
         index=artifacts.x_test.index,
     )
     return {
-        "model": wrapped,
+        "model": calibrated,
         "predictions": preds,
         "probabilities": probs,
         "metrics": evaluate_predictions(metric_key, artifacts.y_test, preds, artifacts.a_test),
+        "epsilon": float(epsilon),
+        "constraint": "EqualOpportunity" if metric_key == "equal_opportunity" else "DemographicParity",
     }
+
+
+def _calibrate_group_thresholds(model, x_train, y_train, a_train, metric_key: str):
+    """Learn group thresholds for clearer DP/EO mitigation impact."""
+    sensitive_col = a_train.name
+    if sensitive_col not in x_train.columns:
+        return model
+
+    probs = pd.Series(np.asarray(model.predict_proba(x_train))[:, -1], index=x_train.index)
+    groups = x_train[sensitive_col].astype(str)
+    target_rate = float(y_train.mean())
+    if metric_key == "equal_opportunity":
+        positive_probs = probs[pd.Series(y_train, index=x_train.index) == 1]
+        target_rate = float(max(0.01, min(0.99, positive_probs.mean()))) if len(positive_probs) else target_rate
+
+    thresholds = {}
+    quantile = max(0.01, min(0.99, 1.0 - target_rate))
+    for group, indexes in groups.groupby(groups).groups.items():
+        group_probs = probs.loc[indexes]
+        thresholds[group] = float(group_probs.quantile(quantile))
+    default_threshold = float(probs.quantile(quantile))
+    return GroupAwareThresholdModel(model, sensitive_col, thresholds, default_threshold)
+
+
+def make_reduction_constraint(metric_key: str, epsilon: float):
+    """Map the UI metric to a Fairlearn reductions constraint."""
+    if metric_key == "equal_opportunity":
+        return TruePositiveRateParity(difference_bound=epsilon)
+    return DemographicParity(difference_bound=epsilon)
+
+
+def fairness_tradeoff_curve(artifacts, metric_key: str, epsilons: list[float] | None = None) -> pd.DataFrame:
+    """Generate an epsilon sweep for accuracy-vs-fairness visualization."""
+    epsilons = epsilons or [0.01, 0.03, 0.05, 0.07, 0.10]
+    rows = []
+    for eps in epsilons:
+        result = train_fairlearn_constraint_model(artifacts, metric_key, eps)
+        metrics = result["metrics"]
+        rows.append(
+            {
+                "epsilon": eps,
+                "accuracy": metrics["accuracy"],
+                "fairness_gap": metrics["selected_fairness_gap"],
+                "fairness_score": max(0.0, 1.0 - metrics["selected_fairness_gap"]),
+                "dp_gap": metrics["demographic_parity_gap"],
+                "eo_gap": metrics["equal_opportunity_gap"],
+            }
+        )
+    return pd.DataFrame(rows)
 
 
 def run_postprocessing(artifacts, metric_key: str) -> dict:

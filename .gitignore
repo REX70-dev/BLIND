@@ -18,10 +18,10 @@ dist/
 # Streamlit and local runtime outputs
 .streamlit/secrets.toml
 fairness_governance/outputs/
+streamlit.*.log
 
 # IDE and OS files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-

@@ -27,6 +27,16 @@ def run_counterfactual_test(model, x: pd.DataFrame, sensitive: str, limit: int =
         examples[f"flipped_{sensitive}"] = cf_x.loc[examples.index, sensitive]
     return {
         "changed_percent": float(mask.mean() * 100),
+        "consistency_score": float((~mask).mean() * 100),
         "examples": examples.reset_index(drop=True),
     }
 
+
+def compare_consistency(before: dict, after: dict) -> pd.DataFrame:
+    """Show counterfactual decision consistency before and after mitigation."""
+    return pd.DataFrame(
+        [
+            {"stage": "Before mitigation", "consistency_score": before.get("consistency_score", 0.0)},
+            {"stage": "After mitigation", "consistency_score": after.get("consistency_score", 0.0)},
+        ]
+    )

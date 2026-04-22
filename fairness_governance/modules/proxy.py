@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
-from fairness_governance.utils.preprocessing import make_preprocessor
+from fairness_governance.utils.preprocessing import feature_names, make_preprocessor
 
 
 def detect_proxy_leakage(df: pd.DataFrame, target: str, sensitive: str) -> dict:
@@ -27,7 +27,15 @@ def detect_proxy_leakage(df: pd.DataFrame, target: str, sensitive: str) -> dict:
     clf = Pipeline(
         steps=[
             ("preprocessor", make_preprocessor(x_train)),
-            ("classifier", LogisticRegression(max_iter=1000)),
+            (
+                "classifier",
+                RandomForestClassifier(
+                    n_estimators=200,
+                    min_samples_leaf=4,
+                    random_state=42,
+                    n_jobs=-1,
+                ),
+            ),
         ]
     )
     clf.fit(x_train, y_train)
@@ -37,10 +45,19 @@ def detect_proxy_leakage(df: pd.DataFrame, target: str, sensitive: str) -> dict:
     except Exception:
         auc = float((clf.predict(x_test) == y_test).mean())
 
-    flagged_features = []
-    if auc > 0.7:
-        flagged_features = _feature_proxy_scores(df, target, sensitive)
-    return {"auc": auc, "proxy_flag": auc > 0.7, "flagged_features": flagged_features}
+    top_features = _rf_feature_importance(clf)
+    explanation = (
+        "High proxy leakage - model can infer sensitive attribute"
+        if auc > 0.7
+        else "Low proxy leakage"
+    )
+    return {
+        "auc": auc,
+        "proxy_flag": auc > 0.7,
+        "flagged_features": top_features,
+        "explanation": explanation,
+        "model_type": "RandomForestClassifier",
+    }
 
 
 def _feature_proxy_scores(df: pd.DataFrame, target: str, sensitive: str) -> list[dict]:
@@ -59,3 +76,15 @@ def _feature_proxy_scores(df: pd.DataFrame, target: str, sensitive: str) -> list
         scores.append({"feature": col, "association_score": score})
     return sorted(scores, key=lambda item: item["association_score"], reverse=True)[:5]
 
+
+def _rf_feature_importance(clf: Pipeline) -> list[dict]:
+    """Return the top three transformed features used to infer A."""
+    preprocessor = clf.named_steps["preprocessor"]
+    forest = clf.named_steps["classifier"]
+    names = feature_names(preprocessor)
+    importances = forest.feature_importances_
+    rows = [
+        {"feature": name, "importance": float(score)}
+        for name, score in zip(names, importances)
+    ]
+    return sorted(rows, key=lambda item: item["importance"], reverse=True)[:3]

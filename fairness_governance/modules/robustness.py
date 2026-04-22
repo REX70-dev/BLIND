@@ -9,7 +9,15 @@ from fairness_governance.utils.preprocessing import flip_series_values
 from .fairness import fairness_gap
 
 
-def run_robustness_tests(model, x, y_true, sensitive_values, sensitive_col: str, metric_key: str) -> dict:
+def run_robustness_tests(
+    model,
+    x,
+    y_true,
+    sensitive_values,
+    sensitive_col: str,
+    metric_key: str,
+    adversarial_noise_scale: float = 0.10,
+) -> dict:
     """Measure fairness degradation under noise and attribute swaps."""
     base_pred = model.predict(x)
     base_gap = fairness_gap(metric_key, y_true, base_pred, sensitive_values)
@@ -19,7 +27,7 @@ def run_robustness_tests(model, x, y_true, sensitive_values, sensitive_col: str,
     rng = np.random.default_rng(42)
     for col in numeric_cols:
         std = float(noisy_x[col].std() or 1.0)
-        noisy_x[col] = noisy_x[col] + rng.normal(0, 0.05 * std, size=len(noisy_x))
+        noisy_x[col] = noisy_x[col] + rng.normal(0, adversarial_noise_scale * std, size=len(noisy_x))
     noise_pred = model.predict(noisy_x)
     noise_gap = fairness_gap(metric_key, y_true, noise_pred, sensitive_values)
 
@@ -38,5 +46,5 @@ def run_robustness_tests(model, x, y_true, sensitive_values, sensitive_col: str,
         "attribute_swap_gap": float(swap_gap),
         "fairness_degradation": float(degradation),
         "stability_score": float(stability_score),
+        "adversarial_noise_scale": float(adversarial_noise_scale),
     }
-

@@ -22,6 +22,8 @@ def generate_pdf_report(
     after_metrics: dict | None = None,
     counterfactual: dict | None = None,
     robustness: dict | None = None,
+    impact: dict | None = None,
+    trust: dict | None = None,
 ) -> str:
     """Create an audit-ready PDF with the core governance evidence."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -73,6 +75,10 @@ def generate_pdf_report(
         )
     if robustness:
         _section(line, "Robustness Summary", robustness)
+    if impact:
+        _section(line, "Fairness Impact Summary", impact)
+    if trust:
+        _section(line, "AI Trust Score", trust)
 
     pdf.save()
     return output_path
@@ -83,4 +89,3 @@ def _section(line, title: str, values: dict):
     line(title, 18)
     for key, value in values.items():
         line(f"{key}: {value}")
-

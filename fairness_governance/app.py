@@ -16,18 +16,29 @@ if PROJECT_ROOT not in sys.path:
 
 from fairness_governance.config import FairnessCharter, set_global_config
 from fairness_governance.modules.audit import run_data_audit
-from fairness_governance.modules.counterfactual import run_counterfactual_test
-from fairness_governance.modules.evaluation import bar_chart, comparison_table, tradeoff_plot
+from fairness_governance.modules.counterfactual import compare_consistency, run_counterfactual_test
+from fairness_governance.modules.evaluation import (
+    bar_chart,
+    comparison_table,
+    epsilon_tradeoff_plot,
+    tradeoff_plot,
+)
 from fairness_governance.modules.intersectional import run_intersectional_analysis
 from fairness_governance.modules.mitigation import (
+    fairness_tradeoff_curve,
     run_postprocessing,
     train_fairlearn_constraint_model,
     train_reweighted_model,
 )
-from fairness_governance.modules.model import train_baseline_model
+from fairness_governance.modules.model import (
+    multi_model_comparison,
+    train_baseline_model,
+    train_random_forest_from_artifacts,
+)
 from fairness_governance.modules.proxy import detect_proxy_leakage
 from fairness_governance.modules.report import generate_pdf_report
 from fairness_governance.modules.robustness import run_robustness_tests
+from fairness_governance.modules.summary import ai_trust_score, bias_label, fairness_impact_summary
 from fairness_governance.modules.uncertainty import label_uncertainty
 from fairness_governance.utils.sample_data import make_sample_credit_data
 
@@ -52,6 +63,35 @@ def show_metric_cards(metrics: dict, prefix: str):
     c1.metric(f"{prefix} Accuracy", f"{metrics.get('accuracy', 0):.3f}")
     c2.metric(f"{prefix} DP Gap", f"{metrics.get('demographic_parity_gap', 0):.3f}")
     c3.metric(f"{prefix} EO Gap", f"{metrics.get('equal_opportunity_gap', 0):.3f}")
+
+
+def status_badge(gap: float, label: str = "Bias Status"):
+    text, color = bias_label(gap)
+    st.markdown(
+        f"""
+        <div style="border-left: 8px solid {color}; padding: 0.75rem 1rem;
+                    background: {color}18; border-radius: 6px; font-weight: 700;">
+            {label}: <span style="color:{color};">{text}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def style_metric_table(df: pd.DataFrame):
+    return df.style.format(
+        {
+            "accuracy": "{:.3f}",
+            "dp_gap": "{:.3f}",
+            "eo_gap": "{:.3f}",
+            "demographic_parity_gap": "{:.3f}",
+            "equal_opportunity_gap": "{:.3f}",
+            "selected_fairness_gap": "{:.3f}",
+            "fairness_gap": "{:.3f}",
+            "fairness_score": "{:.3f}",
+            "epsilon": "{:.2f}",
+        }
+    )
 
 
 def mitigation_summary(results: dict) -> pd.DataFrame:
@@ -91,21 +131,19 @@ def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
         charter["sensitive_attribute"],
         charter["metric_key"],
     )
+    random_forest = train_random_forest_from_artifacts(baseline, charter["metric_key"])
+    model_comparison = multi_model_comparison(baseline, random_forest)
     reweighted = train_reweighted_model(baseline, charter["metric_key"])
     constrained = train_fairlearn_constraint_model(
         baseline, charter["metric_key"], charter["epsilon"]
     )
     postprocessed = run_postprocessing(baseline, charter["metric_key"])
-    candidates = {
-        "Reweighted": reweighted,
-        "Fairlearn Constraint": constrained,
-    }
-    best_name, best_result = min(
-        candidates.items(),
-        key=lambda item: (
-            item[1]["metrics"]["selected_fairness_gap"],
-            -item[1]["metrics"]["accuracy"],
-        ),
+    best_name = "Fairlearn Constraint"
+    best_result = constrained
+    baseline_cf = run_counterfactual_test(
+        baseline.model,
+        baseline.x_test,
+        charter["sensitive_attribute"],
     )
     cf = run_counterfactual_test(
         best_result["model"],
@@ -133,20 +171,30 @@ def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
     )
     uncertainty = label_uncertainty(best_result["model"], baseline.x_test)
     compare = comparison_table(baseline.metrics, best_result["metrics"], best_name)
+    tradeoff_curve = fairness_tradeoff_curve(baseline, charter["metric_key"])
+    impact = fairness_impact_summary(baseline.metrics, best_result["metrics"])
+    trust = ai_trust_score(best_result["metrics"], robustness, cf, uncertainty)
     return {
         "audit": audit,
         "proxy": proxy,
         "baseline": baseline,
+        "random_forest": random_forest,
+        "model_comparison": model_comparison,
         "reweighted": reweighted,
         "constrained": constrained,
         "postprocessed": postprocessed,
         "best_name": best_name,
         "best": best_result,
+        "baseline_counterfactual": baseline_cf,
         "counterfactual": cf,
+        "consistency_comparison": compare_consistency(baseline_cf, cf),
         "intersectional": intersectional,
         "robustness": robustness,
         "uncertainty": uncertainty,
         "comparison": compare,
+        "tradeoff_curve": tradeoff_curve,
+        "impact": impact,
+        "trust": trust,
     }
 
 
@@ -193,7 +241,14 @@ def main():
     fairness_metric = st.sidebar.selectbox(
         "Fairness Metric", ["Demographic Parity", "Equal Opportunity"]
     )
-    epsilon = st.sidebar.slider("Epsilon", min_value=0.01, max_value=0.10, value=0.05, step=0.01)
+    epsilon = st.sidebar.slider(
+        "Fairness Strength (ε)",
+        min_value=0.01,
+        max_value=0.10,
+        value=0.05,
+        step=0.01,
+        help="Low ε applies stronger fairness pressure. High ε gives the model more room to optimize accuracy.",
+    )
     charter = set_global_config(
         FairnessCharter(
             target=target,
@@ -208,12 +263,18 @@ def main():
     with st.expander("Dataset preview", expanded=True):
         st.dataframe(df.head(50), use_container_width=True)
 
+    analysis_key = (target, sensitive, fairness_metric, round(epsilon, 2), len(df), tuple(df.columns))
     run_clicked = st.button("Run Bias Analysis and Fix Bias", type="primary")
-    if run_clicked:
+    should_auto_rerun = (
+        "results" in st.session_state
+        and st.session_state.get("analysis_key") != analysis_key
+    )
+    if run_clicked or should_auto_rerun:
         with st.spinner("Running all governance tiers..."):
             try:
                 st.session_state["results"] = run_full_analysis(df, charter)
                 st.session_state["charter"] = charter
+                st.session_state["analysis_key"] = analysis_key
             except ValueError as exc:
                 st.error(str(exc))
                 st.info(
@@ -227,6 +288,10 @@ def main():
         st.info("Run the analysis to detect bias, mitigate it, and generate audit outputs.")
         return
 
+    st.header("BEFORE FIX")
+    status_badge(results["baseline"].metrics["selected_fairness_gap"], "Baseline")
+    show_metric_cards(results["baseline"].metrics, "Before Fix")
+
     st.header("Tier 1: Data Audit")
     c1, c2, c3 = st.columns(3)
     c1.metric("Demographic Parity Gap", f"{results['audit']['demographic_parity_gap']:.3f}")
@@ -236,19 +301,42 @@ def main():
 
     st.header("Tier 2: Proxy Detection")
     st.metric("Sensitive Attribute AUC", f"{results['proxy']['auc']:.3f}")
-    st.write("Proxy leakage flag:", results["proxy"]["proxy_flag"])
+    st.write(results["proxy"]["explanation"])
     st.dataframe(pd.DataFrame(results["proxy"]["flagged_features"]), use_container_width=True)
 
-    st.header("Tiers 3-6: Model, Mitigation, Post-processing, Evaluation")
-    show_metric_cards(results["baseline"].metrics, "Baseline")
-    show_metric_cards(results["best"]["metrics"], results["best_name"])
-    st.dataframe(mitigation_summary(results), use_container_width=True)
+    st.header("Tier 3: Multi-Model Comparison")
+    st.caption("Logistic -> more stable, interpretable. Random Forest -> higher accuracy potential, higher bias risk.")
+    st.dataframe(style_metric_table(results["model_comparison"]), use_container_width=True)
+
+    st.header("AFTER FIX")
+    status_badge(results["best"]["metrics"]["selected_fairness_gap"], "Mitigated")
+    show_metric_cards(results["best"]["metrics"], f"After Fix ({results['best_name']}, ε={epsilon:.2f})")
+
+    st.header("Fairness Impact Summary")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Bias Reduced", f"{results['impact']['bias_reduction_pct']:.1f}%")
+    c2.metric("EO Improved", f"{results['impact']['equal_opportunity_improvement_pct']:.1f}%")
+    c3.metric("Accuracy Change", f"{results['impact']['accuracy_change_pct']:.1f}%")
+    c4.metric("AI TRUST SCORE", f"{results['trust']['score']:.1f} / 10")
+    st.success(results["impact"]["summary"])
+
+    st.header("Tiers 4-6: Mitigation, Post-processing, Evaluation")
+    st.dataframe(style_metric_table(mitigation_summary(results)), use_container_width=True)
     st.dataframe(results["comparison"], use_container_width=True)
     st.plotly_chart(bar_chart(results["comparison"]), use_container_width=True)
     st.plotly_chart(tradeoff_plot(results["comparison"]), use_container_width=True)
 
+    st.header("Tier 9: Trade-off Visualization")
+    st.caption("X-axis is accuracy. Y-axis is fairness score (1 - selected fairness gap).")
+    st.dataframe(style_metric_table(results["tradeoff_curve"]), use_container_width=True)
+    st.plotly_chart(epsilon_tradeoff_plot(results["tradeoff_curve"]), use_container_width=True)
+
     st.header("Tier 7: Counterfactual Engine")
-    st.metric("Changed Predictions", f"{results['counterfactual']['changed_percent']:.2f}%")
+    cc1, cc2, cc3 = st.columns(3)
+    cc1.metric("Before Consistency", f"{results['baseline_counterfactual']['consistency_score']:.2f}%")
+    cc2.metric("After Consistency", f"{results['counterfactual']['consistency_score']:.2f}%")
+    cc3.metric("After Changed Predictions", f"{results['counterfactual']['changed_percent']:.2f}%")
+    st.dataframe(results["consistency_comparison"], use_container_width=True)
     st.dataframe(results["counterfactual"]["examples"], use_container_width=True)
 
     st.header("Tier 8: Intersectional Analysis")
@@ -278,6 +366,8 @@ def main():
             after_metrics=results["best"]["metrics"],
             counterfactual=results["counterfactual"],
             robustness=results["robustness"],
+            impact=results["impact"],
+            trust=results["trust"],
         )
         with open(generated, "rb") as handle:
             st.download_button(

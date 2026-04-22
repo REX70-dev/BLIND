@@ -38,3 +38,19 @@ def tradeoff_plot(compare_df: pd.DataFrame):
         title="Accuracy vs Fairness Gap",
     )
 
+
+def epsilon_tradeoff_plot(curve_df: pd.DataFrame):
+    """Plot fairness strength sweep: x=accuracy, y=1-gap."""
+    return px.line(
+        curve_df,
+        x="accuracy",
+        y="fairness_score",
+        text="epsilon",
+        markers=True,
+        title="Fairness vs Accuracy Trade-off by Epsilon",
+        labels={
+            "accuracy": "Accuracy",
+            "fairness_score": "Fairness Score (1 - selected gap)",
+            "epsilon": "Epsilon",
+        },
+    )

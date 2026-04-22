@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
 
 from fairness_governance.utils.preprocessing import (
     encode_binary_sensitive,
@@ -39,6 +40,24 @@ def build_logistic_pipeline(x: pd.DataFrame) -> Pipeline:
             (
                 "classifier",
                 LogisticRegression(max_iter=1000, solver="lbfgs"),
+            ),
+        ]
+    )
+
+
+def build_random_forest_pipeline(x: pd.DataFrame) -> Pipeline:
+    """Random Forest baseline for accuracy-vs-bias comparison."""
+    return Pipeline(
+        steps=[
+            ("preprocessor", make_preprocessor(x)),
+            (
+                "classifier",
+                RandomForestClassifier(
+                    n_estimators=180,
+                    min_samples_leaf=5,
+                    random_state=42,
+                    n_jobs=-1,
+                ),
             ),
         ]
     )
@@ -77,3 +96,39 @@ def train_baseline_model(
         metrics=metrics,
     )
 
+
+def train_random_forest_from_artifacts(artifacts: ModelArtifacts, metric_key: str) -> dict:
+    """Train a Random Forest on the same split used by the logistic baseline."""
+    model = build_random_forest_pipeline(artifacts.x_train)
+    model.fit(artifacts.x_train, artifacts.y_train)
+    preds = pd.Series(model.predict(artifacts.x_test), index=artifacts.x_test.index)
+    probs = pd.Series(model.predict_proba(artifacts.x_test)[:, 1], index=artifacts.x_test.index)
+    return {
+        "model": model,
+        "predictions": preds,
+        "probabilities": probs,
+        "metrics": evaluate_predictions(metric_key, artifacts.y_test, preds, artifacts.a_test),
+        "note": "Random Forest -> higher accuracy potential, but can amplify proxy bias.",
+    }
+
+
+def multi_model_comparison(logistic_artifacts: ModelArtifacts, random_forest: dict) -> pd.DataFrame:
+    """Readable comparison of the two baseline model families."""
+    return pd.DataFrame(
+        [
+            {
+                "model": "Logistic Regression",
+                "accuracy": logistic_artifacts.metrics["accuracy"],
+                "dp_gap": logistic_artifacts.metrics["demographic_parity_gap"],
+                "eo_gap": logistic_artifacts.metrics["equal_opportunity_gap"],
+                "interpretation": "More stable and interpretable",
+            },
+            {
+                "model": "Random Forest",
+                "accuracy": random_forest["metrics"]["accuracy"],
+                "dp_gap": random_forest["metrics"]["demographic_parity_gap"],
+                "eo_gap": random_forest["metrics"]["equal_opportunity_gap"],
+                "interpretation": "Often higher accuracy, potentially higher bias",
+            },
+        ]
+    )

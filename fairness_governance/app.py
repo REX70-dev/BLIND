@@ -39,6 +39,7 @@ from fairness_governance.modules.proxy import detect_proxy_leakage
 from fairness_governance.modules.report import generate_pdf_report
 from fairness_governance.modules.robustness import run_robustness_tests
 from fairness_governance.modules.summary import ai_trust_score, bias_label, fairness_impact_summary
+from fairness_governance.modules.ui_theme import hero, inject_meritai_theme, notice, render_header, section_title
 from fairness_governance.modules.uncertainty import label_uncertainty
 from fairness_governance.utils.sample_data import make_sample_credit_data
 
@@ -224,7 +225,12 @@ def prediction_form(model, df: pd.DataFrame, target: str):
 
 
 def main():
-    st.title("Fairness Governance System")
+    inject_meritai_theme()
+    render_header()
+    hero(
+        "Fairness Governance System",
+        "A demo-ready AI governance cockpit for bias detection, mitigation, proxy awareness, robustness, and audit reporting.",
+    )
     df = load_dataset()
 
     st.sidebar.header("Fairness Charter")
@@ -258,8 +264,17 @@ def main():
         )
     )
 
-    st.write("Active charter")
+    section_title(
+        "Data Input & Fairness Charter",
+        "Upload a structured dataset or use the sample credit dataset, then define the governance target and protected attribute.",
+    )
+    notice(
+        "The model pipeline uses sensitive attributes for auditing and mitigation controls, while every output remains traceable for governance review.",
+        "success",
+    )
+    st.markdown('<div class="merit-card"><div class="merit-card-title">Active Charter</div>', unsafe_allow_html=True)
     st.json(charter)
+    st.markdown("</div>", unsafe_allow_html=True)
     with st.expander("Dataset preview", expanded=True):
         st.dataframe(df.head(50), use_container_width=True)
 
@@ -285,53 +300,53 @@ def main():
 
     results = st.session_state.get("results")
     if not results:
-        st.info("Run the analysis to detect bias, mitigate it, and generate audit outputs.")
+        notice("Run the analysis to detect bias, mitigate it, and generate audit outputs.", "warning")
         return
 
-    st.header("BEFORE FIX")
+    section_title("BEFORE FIX", "Baseline model behavior before mitigation.")
     status_badge(results["baseline"].metrics["selected_fairness_gap"], "Baseline")
     show_metric_cards(results["baseline"].metrics, "Before Fix")
 
-    st.header("Tier 1: Data Audit")
+    section_title("Tier 1: Data Audit", "Group outcome rates and initial label imbalance.")
     c1, c2, c3 = st.columns(3)
     c1.metric("Demographic Parity Gap", f"{results['audit']['demographic_parity_gap']:.3f}")
     c2.metric("Equal Opportunity Gap", f"{results['audit']['equal_opportunity_gap']:.3f}")
     c3.metric("Bias Flag", str(results["audit"]["bias_flag"]))
     st.dataframe(results["audit"]["group_table"], use_container_width=True)
 
-    st.header("Tier 2: Proxy Detection")
+    section_title("Tier 2: Proxy Detection", "Random Forest audit model tests whether features can infer the sensitive attribute.")
     st.metric("Sensitive Attribute AUC", f"{results['proxy']['auc']:.3f}")
-    st.write(results["proxy"]["explanation"])
+    notice(results["proxy"]["explanation"], "danger" if results["proxy"]["proxy_flag"] else "success")
     st.dataframe(pd.DataFrame(results["proxy"]["flagged_features"]), use_container_width=True)
 
-    st.header("Tier 3: Multi-Model Comparison")
+    section_title("Tier 3: Multi-Model Comparison", "Compare interpretable stability against higher-capacity accuracy.")
     st.caption("Logistic -> more stable, interpretable. Random Forest -> higher accuracy potential, higher bias risk.")
     st.dataframe(style_metric_table(results["model_comparison"]), use_container_width=True)
 
-    st.header("AFTER FIX")
+    section_title("AFTER FIX", "Constrained mitigation and calibrated thresholds after the fairness intervention.")
     status_badge(results["best"]["metrics"]["selected_fairness_gap"], "Mitigated")
     show_metric_cards(results["best"]["metrics"], f"After Fix ({results['best_name']}, ε={epsilon:.2f})")
 
-    st.header("Fairness Impact Summary")
+    section_title("Fairness Impact Summary", "Business-facing view of bias reduction, accuracy movement, and trust.")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Bias Reduced", f"{results['impact']['bias_reduction_pct']:.1f}%")
     c2.metric("EO Improved", f"{results['impact']['equal_opportunity_improvement_pct']:.1f}%")
     c3.metric("Accuracy Change", f"{results['impact']['accuracy_change_pct']:.1f}%")
     c4.metric("AI TRUST SCORE", f"{results['trust']['score']:.1f} / 10")
-    st.success(results["impact"]["summary"])
+    notice(results["impact"]["summary"], "success")
 
-    st.header("Tiers 4-6: Mitigation, Post-processing, Evaluation")
+    section_title("Tiers 4-6: Mitigation, Post-processing, Evaluation", "Compare reweighting, reduction constraints, and post-processing results.")
     st.dataframe(style_metric_table(mitigation_summary(results)), use_container_width=True)
     st.dataframe(results["comparison"], use_container_width=True)
     st.plotly_chart(bar_chart(results["comparison"]), use_container_width=True)
     st.plotly_chart(tradeoff_plot(results["comparison"]), use_container_width=True)
 
-    st.header("Tier 9: Trade-off Visualization")
+    section_title("Trade-off Visualization", "Accuracy versus fairness score across epsilon values.")
     st.caption("X-axis is accuracy. Y-axis is fairness score (1 - selected fairness gap).")
     st.dataframe(style_metric_table(results["tradeoff_curve"]), use_container_width=True)
     st.plotly_chart(epsilon_tradeoff_plot(results["tradeoff_curve"]), use_container_width=True)
 
-    st.header("Tier 7: Counterfactual Engine")
+    section_title("Tier 7: Counterfactual Engine", "Flip the sensitive attribute and measure whether decisions remain consistent.")
     cc1, cc2, cc3 = st.columns(3)
     cc1.metric("Before Consistency", f"{results['baseline_counterfactual']['consistency_score']:.2f}%")
     cc2.metric("After Consistency", f"{results['counterfactual']['consistency_score']:.2f}%")
@@ -339,18 +354,18 @@ def main():
     st.dataframe(results["consistency_comparison"], use_container_width=True)
     st.dataframe(results["counterfactual"]["examples"], use_container_width=True)
 
-    st.header("Tier 8: Intersectional Analysis")
+    section_title("Tier 8: Intersectional Analysis", "Subgroup fairness across protected attribute intersections.")
     st.dataframe(results["intersectional"], use_container_width=True)
 
-    st.header("Tier 9: Robustness Testing")
+    section_title("Tier 9: Robustness Testing", "Fairness stability under adversarial numeric noise and attribute swap tests.")
     st.json(results["robustness"])
 
-    st.header("Tier 10: Uncertainty Module")
+    section_title("Tier 10: Uncertainty Module", "Low-confidence decisions are flagged for human review.")
     st.dataframe(results["uncertainty"].head(50), use_container_width=True)
 
     prediction_form(results["best"]["model"], df, target)
 
-    st.header("Tier 12: Audit Report")
+    section_title("Tier 12: Audit Report", "Generate an audit-ready PDF report with charter, metrics, impact, and robustness evidence.")
     if st.button("Generate PDF Report"):
         report_path = os.path.join(
             PACKAGE_ROOT,

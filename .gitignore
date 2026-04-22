@@ -19,6 +19,7 @@ dist/
 .streamlit/secrets.toml
 fairness_governance/outputs/
 streamlit.*.log
+_ui_import/
 
 # IDE and OS files
 .vscode/

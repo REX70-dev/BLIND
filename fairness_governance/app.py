@@ -56,7 +56,16 @@ st.set_page_config(page_title="FairLens - Fairness Governance", layout="wide")
 
 @st.cache_data(show_spinner=False)
 def load_uci_adult() -> pd.DataFrame:
-    """Load real UCI Adult dataset (contains 'sex' column)."""
+    """Load the UCI Adult dataset from a bundled local snapshot first.
+
+    Streamlit hosting is much more reliable when the default dataset is
+    available inside the repo, so the app uses the local CSV snapshot and only
+    falls back to the original UCI URL if needed.
+    """
+    local_path = os.path.join(PACKAGE_ROOT, "data", "adult_uci_sample.csv")
+    if os.path.exists(local_path):
+        return pd.read_csv(local_path)
+
     url = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
     columns = [
         "age", "workclass", "fnlwgt", "education", "education_num",
@@ -64,10 +73,9 @@ def load_uci_adult() -> pd.DataFrame:
         "capital_gain", "capital_loss", "hours_per_week", "native_country", "income"
     ]
     df = pd.read_csv(url, names=columns, na_values="?", skipinitialspace=True)
-    df = df.dropna()  # clean missing values
+    df = df.dropna()
     df["income"] = df["income"].astype(str).str.strip().str.rstrip(".")
     df = df[df["income"].isin(["<=50K", ">50K"])].copy()
-    # Keep the cloud/local demo responsive while preserving Adult distribution.
     return df.sample(n=min(6000, len(df)), random_state=21).reset_index(drop=True)
 
 

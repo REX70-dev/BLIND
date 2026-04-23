@@ -1,4 +1,4 @@
-"""Streamlit UI for the Fairness Governance System."""
+"""Streamlit UI for the Fairness Governance System - FIXED VERSION"""
 
 from __future__ import annotations
 
@@ -51,14 +51,43 @@ from fairness_governance.modules.uncertainty import label_uncertainty
 from fairness_governance.utils.sample_data import make_sample_credit_data
 
 
-st.set_page_config(page_title="Fairness Governance System", layout="wide")
+st.set_page_config(page_title="FairLens - Fairness Governance", layout="wide")
+
+
+@st.cache_data(show_spinner=False)
+def load_uci_adult() -> pd.DataFrame:
+    """Load real UCI Adult dataset (contains 'sex' column)."""
+    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
+    columns = [
+        "age", "workclass", "fnlwgt", "education", "education_num",
+        "marital_status", "occupation", "relationship", "race", "sex",
+        "capital_gain", "capital_loss", "hours_per_week", "native_country", "income"
+    ]
+    df = pd.read_csv(url, names=columns, na_values="?", skipinitialspace=True)
+    df = df.dropna()  # clean missing values
+    # Keep the cloud/local demo responsive while preserving Adult distribution.
+    return df.sample(n=min(6000, len(df)), random_state=42).reset_index(drop=True)
 
 
 def load_dataset() -> pd.DataFrame:
-    uploaded = st.sidebar.file_uploader("Upload CSV dataset", type=["csv"])
-    if uploaded is not None:
-        return pd.read_csv(uploaded)
-    st.sidebar.info("Using generated sample credit dataset.")
+    st.sidebar.header("Dataset")
+    source = st.sidebar.radio(
+        "Choose dataset",
+        ["Adult-style Demo Dataset", "UCI Adult (Recommended - has 'sex')"],
+        index=1,
+    )
+
+    if source == "UCI Adult (Recommended - has 'sex')":
+        try:
+            df = load_uci_adult()
+            st.sidebar.success("Loaded UCI Adult dataset (real benchmark sample)")
+            return df
+        except Exception as exc:
+            st.sidebar.warning(f"Could not load UCI Adult online: {exc}")
+            st.sidebar.info("Falling back to generated Adult-style demo dataset.")
+            return make_sample_credit_data()
+
+    st.sidebar.info("Using generated Adult-style demo dataset.")
     return make_sample_credit_data()
 
 
@@ -124,25 +153,31 @@ def mitigation_summary(results: dict) -> pd.DataFrame:
 
 
 def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
-    if charter["sensitive_attribute"] == "sex":
-        assert df["sex"].nunique() == 2
+    # Critical validation
+    if charter["sensitive_attribute"] == "sex" and "sex" in df.columns:
+        assert df["sex"].nunique() == 2, "Dataset must contain both Male and Female in 'sex' column"
+
     audit = run_data_audit(
         df,
         charter["target"],
         charter["sensitive_attribute"],
         charter["epsilon"],
     )
+
     baseline = train_baseline_model(
         df,
         charter["target"],
         charter["sensitive_attribute"],
         charter["metric_key"],
     )
+
     proxy = detect_proxy_from_artifacts(baseline)
     print("AUDIT dataset shape:", baseline.diagnostics["dataset_shape"])
     print("AUDIT train group counts:", baseline.diagnostics["group_counts_train"])
     print("AUDIT test group counts:", baseline.diagnostics["group_counts_test"])
     print("AUDIT baseline metrics:", baseline.metrics)
+
+    # Rest of your original logic (unchanged)
     random_forest = train_random_forest_from_artifacts(baseline, charter["metric_key"])
     model_comparison = multi_model_comparison(baseline, random_forest)
     reweighted = train_reweighted_model(baseline, charter["metric_key"])
@@ -150,46 +185,42 @@ def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
         baseline, charter["metric_key"], charter["epsilon"]
     )
     postprocessed = run_postprocessing(baseline, charter["metric_key"])
+
     best_name = "Fairlearn Constraint"
     best_result = constrained
+
     x_test_with_sensitive = baseline.x_test.copy()
     x_test_with_sensitive[charter["sensitive_attribute"]] = baseline.a_test
+
     baseline_cf = run_counterfactual_test(
-        baseline.model,
-        x_test_with_sensitive,
-        charter["sensitive_attribute"],
+        baseline.model, x_test_with_sensitive, charter["sensitive_attribute"]
     )
     cf = run_counterfactual_test(
-        best_result["model"],
-        x_test_with_sensitive,
-        charter["sensitive_attribute"],
+        best_result["model"], x_test_with_sensitive, charter["sensitive_attribute"]
     )
+
     second_feature = next(
-        (c for c in baseline.x_test.columns if c != charter["sensitive_attribute"]),
-        None,
+        (c for c in baseline.x_test.columns if c != charter["sensitive_attribute"]), None
     )
     intersectional = run_intersectional_analysis(
-        baseline.x_test,
-        baseline.y_test,
-        best_result["predictions"],
-        charter["sensitive_attribute"],
-        second_feature=second_feature,
+        baseline.x_test, baseline.y_test, best_result["predictions"],
+        charter["sensitive_attribute"], second_feature=second_feature
     )
+
     robustness = run_robustness_tests(
-        best_result["model"],
-        x_test_with_sensitive,
-        baseline.y_test,
-        baseline.a_test,
-        charter["sensitive_attribute"],
-        charter["metric_key"],
+        best_result["model"], x_test_with_sensitive, baseline.y_test,
+        baseline.a_test, charter["sensitive_attribute"], charter["metric_key"]
     )
+
     uncertainty = label_uncertainty(best_result["model"], baseline.x_test)
+
     compare = comparison_table(baseline.metrics, best_result["metrics"], best_name)
     tradeoff_curve = fairness_tradeoff_curve(baseline, charter["metric_key"])
     impact = fairness_impact_summary(baseline.metrics, best_result["metrics"])
     trust = ai_trust_score(best_result["metrics"], robustness, cf, uncertainty)
     print("AUDIT mitigated metrics:", best_result["metrics"])
     print("AUDIT robustness:", robustness)
+
     return {
         "audit": audit,
         "proxy": proxy,
@@ -224,10 +255,8 @@ def prediction_form(model, df: pd.DataFrame, target: str):
             series = feature_df[col]
             if pd.api.types.is_numeric_dtype(series):
                 values[col] = st.number_input(
-                    col,
-                    value=float(series.median()),
-                    min_value=float(series.min()),
-                    max_value=float(series.max()),
+                    col, value=float(series.median()),
+                    min_value=float(series.min()), max_value=float(series.max())
                 )
             else:
                 options = sorted(series.astype(str).dropna().unique().tolist())
@@ -243,35 +272,30 @@ def main():
     inject_meritai_theme()
     render_header()
     hero(
-        "Fairness Governance System",
-        "A demo-ready AI governance cockpit for bias detection, mitigation, proxy awareness, robustness, and audit reporting.",
+        "FairLens",
+        "Unbiased AI Decision Making • Real-time governance cockpit",
     )
     render_pipeline_strip()
+
     df = load_dataset()
 
     st.sidebar.header("Fairness Charter")
-    default_target = df.columns.get_loc("income") if "income" in df.columns else len(df.columns) - 1
-    target = st.sidebar.selectbox("Target (Y)", df.columns, index=default_target)
+    target = st.sidebar.selectbox("Target (Y)", df.columns, index=len(df.columns)-1)
+
     sensitive_options = [c for c in df.columns if c != target]
-    default_sensitive = (
-        sensitive_options.index("sex")
-        if "sex" in sensitive_options
-        else 0
-    )
+    default_sensitive = sensitive_options.index("sex") if "sex" in sensitive_options else 0
     sensitive = st.sidebar.selectbox(
         "Sensitive Attribute (A)", sensitive_options, index=default_sensitive
     )
+
     fairness_metric = st.sidebar.selectbox(
         "Fairness Metric", ["Demographic Parity", "Equal Opportunity"]
     )
     epsilon = st.sidebar.slider(
-        "Fairness Strength (ε)",
-        min_value=0.01,
-        max_value=0.10,
-        value=0.03,
-        step=0.01,
-        help="Low ε applies stronger fairness pressure. High ε gives the model more room to optimize accuracy.",
+        "Fairness Strength (ε)", 0.01, 0.10, 0.03, 0.01,
+        help="Lower ε = stronger fairness enforcement"
     )
+
     charter = set_global_config(
         FairnessCharter(
             target=target,
@@ -281,43 +305,39 @@ def main():
         )
     )
 
-    section_title(
-        "Data Input & Fairness Charter",
-        "Upload a structured dataset or use the sample credit dataset, then define the governance target and protected attribute.",
-    )
+    # Validation warning
+    if sensitive != "sex":
+        st.sidebar.warning("⚠️ Using 'sex' as sensitive attribute gives realistic results. Consider switching to it.")
+
+    section_title("Data Input & Charter", "")
     notice(
-        "The model pipeline uses sensitive attributes for auditing and mitigation controls, while every output remains traceable for governance review.",
+        "The sensitive attribute is removed from predictive features, then used only for fairness auditing, constraints, and post-processing controls.",
         "success",
     )
+
     st.markdown('<div class="merit-card"><div class="merit-card-title">Active Charter</div>', unsafe_allow_html=True)
     st.json(charter)
     st.markdown("</div>", unsafe_allow_html=True)
-    with st.expander("Dataset preview", expanded=True):
+
+    with st.expander("Dataset Preview", expanded=True):
         st.dataframe(df.head(50), use_container_width=True)
 
-    analysis_key = (target, sensitive, fairness_metric, round(epsilon, 2), len(df), tuple(df.columns))
-    run_clicked = st.button("Run Bias Analysis and Fix Bias", type="primary")
-    should_auto_rerun = (
-        "results" in st.session_state
-        and st.session_state.get("analysis_key") != analysis_key
-    )
-    if run_clicked or should_auto_rerun:
-        with st.spinner("Running all governance tiers..."):
+    analysis_key = (target, sensitive, fairness_metric, round(epsilon, 2), len(df))
+    run_clicked = st.button("🚀 Run Full Bias Analysis & Fix", type="primary")
+
+    if run_clicked or ("results" in st.session_state and st.session_state.get("analysis_key") != analysis_key):
+        with st.spinner("Running all 13 governance tiers..."):
             try:
                 st.session_state["results"] = run_full_analysis(df, charter)
                 st.session_state["charter"] = charter
                 st.session_state["analysis_key"] = analysis_key
-            except ValueError as exc:
-                st.error(str(exc))
-                st.info(
-                    "Choose a target column with exactly two classes, such as "
-                    "`approved` in the sample dataset."
-                )
+            except Exception as exc:
+                st.error(f"Error: {exc}")
                 st.stop()
 
     results = st.session_state.get("results")
     if not results:
-        notice("Run the analysis to detect bias, mitigate it, and generate audit outputs.", "warning")
+        notice("Click 'Run Full Bias Analysis & Fix' to start the governance pipeline", "warning")
         return
 
     section_title("BEFORE FIX", "Baseline model behavior before mitigation.")
@@ -411,6 +431,7 @@ def main():
                 file_name=os.path.basename(generated),
                 mime="application/pdf" if generated.endswith(".pdf") else "text/plain",
             )
+
 
 
 if __name__ == "__main__":

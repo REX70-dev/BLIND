@@ -289,6 +289,38 @@ def inject_meritai_theme() -> None:
             padding: 5px 10px;
             background: rgba(255,255,255,0.04);
         }
+
+        .merit-pipeline {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 0;
+            margin: 10px 0 22px;
+            border: 1px solid var(--merit-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .merit-step {
+            background: rgba(34,211,160,0.08);
+            color: var(--merit-green);
+            padding: 10px 12px;
+            border-right: 1px solid var(--merit-border);
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .merit-step:last-child {
+            border-right: none;
+        }
+
+        .merit-step span {
+            display: block;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.62rem;
+            opacity: 0.75;
+            margin-bottom: 2px;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -339,6 +371,22 @@ def hero(title: str, subtitle: str) -> None:
     )
 
 
+def render_pipeline_strip() -> None:
+    st.markdown(
+        """
+        <div class="merit-pipeline">
+            <div class="merit-step"><span>01</span>Data</div>
+            <div class="merit-step"><span>02</span>Governance</div>
+            <div class="merit-step"><span>03</span>Model</div>
+            <div class="merit-step"><span>04</span>Fairness</div>
+            <div class="merit-step"><span>05</span>Optimize</div>
+            <div class="merit-step"><span>06</span>Report</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def section_title(title: str, subtitle: str) -> None:
     st.markdown(
         f"""
@@ -355,4 +403,3 @@ def notice(text: str, kind: str = "info") -> None:
         f'<div class="merit-notice {kind_class}">{html.escape(text)}</div>',
         unsafe_allow_html=True,
     )
-

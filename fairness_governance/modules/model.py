@@ -31,6 +31,7 @@ class ModelArtifacts:
     predictions: pd.Series
     probabilities: pd.Series
     metrics: dict
+    diagnostics: dict
 
 
 def build_logistic_pipeline(x: pd.DataFrame) -> Pipeline:
@@ -39,7 +40,7 @@ def build_logistic_pipeline(x: pd.DataFrame) -> Pipeline:
             ("preprocessor", make_preprocessor(x)),
             (
                 "classifier",
-                LogisticRegression(max_iter=1000, solver="lbfgs"),
+                LogisticRegression(max_iter=1000, solver="lbfgs", class_weight="balanced"),
             ),
         ]
     )
@@ -74,15 +75,24 @@ def train_baseline_model(
     x, y_raw, a_raw = split_dataset(df, target, sensitive)
     y = encode_binary_target(y_raw)
     a = encode_binary_sensitive(a_raw)
-    stratify = y if y.nunique() == 2 and y.value_counts().min() >= 2 else None
+    assert a.nunique() == 2
+    assert y.nunique() == 2
+    stratify = y.astype(str) + "_" + a.astype(str)
+    if stratify.value_counts().min() < 2:
+        raise ValueError(
+            "Each label/sensitive group combination needs at least two rows "
+            "for a stratified train/test split."
+        )
     x_train, x_test, y_train, y_test, a_train, a_test = train_test_split(
         x, y, a, test_size=test_size, random_state=random_state, stratify=stratify
     )
+    _validate_split_balance(y_train, y_test, a_train, a_test)
     model = build_logistic_pipeline(x_train)
     model.fit(x_train, y_train)
     preds = pd.Series(model.predict(x_test), index=x_test.index, name="prediction")
     probs = pd.Series(model.predict_proba(x_test)[:, 1], index=x_test.index, name="probability")
     metrics = evaluate_predictions(metric_key, y_test, preds, a_test)
+    diagnostics = split_diagnostics(df, x_train, x_test, y_train, y_test, a_train, a_test)
     return ModelArtifacts(
         model=model,
         x_train=x_train,
@@ -94,7 +104,36 @@ def train_baseline_model(
         predictions=preds,
         probabilities=probs,
         metrics=metrics,
+        diagnostics=diagnostics,
     )
+
+
+def _validate_split_balance(y_train, y_test, a_train, a_test, min_group_size: int = 30) -> None:
+    """Audit-critical sanity checks after stratification."""
+    assert pd.Series(a_train).nunique() == 2
+    assert pd.Series(y_train).nunique() == 2
+    train_counts = pd.Series(a_train).value_counts()
+    test_counts = pd.Series(a_test).value_counts()
+    if train_counts.min() < min_group_size or test_counts.min() < min_group_size:
+        raise ValueError(
+            "Each sensitive group must have at least "
+            f"{min_group_size} samples in train and test. "
+            f"Train counts: {train_counts.to_dict()}; test counts: {test_counts.to_dict()}."
+        )
+
+
+def split_diagnostics(df, x_train, x_test, y_train, y_test, a_train, a_test) -> dict:
+    """Collect split logging values for audit reporting and dashboard display."""
+    return {
+        "dataset_shape": tuple(df.shape),
+        "feature_shape_train": tuple(x_train.shape),
+        "feature_shape_test": tuple(x_test.shape),
+        "group_counts_full": pd.Series(pd.concat([a_train, a_test])).value_counts().to_dict(),
+        "group_counts_train": pd.Series(a_train).value_counts().to_dict(),
+        "group_counts_test": pd.Series(a_test).value_counts().to_dict(),
+        "label_counts_train": pd.Series(y_train).value_counts().to_dict(),
+        "label_counts_test": pd.Series(y_test).value_counts().to_dict(),
+    }
 
 
 def train_random_forest_from_artifacts(artifacts: ModelArtifacts, metric_key: str) -> dict:

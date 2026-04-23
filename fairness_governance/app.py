@@ -35,11 +35,18 @@ from fairness_governance.modules.model import (
     train_baseline_model,
     train_random_forest_from_artifacts,
 )
-from fairness_governance.modules.proxy import detect_proxy_leakage
+from fairness_governance.modules.proxy import detect_proxy_from_artifacts
 from fairness_governance.modules.report import generate_pdf_report
 from fairness_governance.modules.robustness import run_robustness_tests
 from fairness_governance.modules.summary import ai_trust_score, bias_label, fairness_impact_summary
-from fairness_governance.modules.ui_theme import hero, inject_meritai_theme, notice, render_header, section_title
+from fairness_governance.modules.ui_theme import (
+    hero,
+    inject_meritai_theme,
+    notice,
+    render_header,
+    render_pipeline_strip,
+    section_title,
+)
 from fairness_governance.modules.uncertainty import label_uncertainty
 from fairness_governance.utils.sample_data import make_sample_credit_data
 
@@ -117,14 +124,13 @@ def mitigation_summary(results: dict) -> pd.DataFrame:
 
 
 def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
+    if charter["sensitive_attribute"] == "sex":
+        assert df["sex"].nunique() == 2
     audit = run_data_audit(
         df,
         charter["target"],
         charter["sensitive_attribute"],
         charter["epsilon"],
-    )
-    proxy = detect_proxy_leakage(
-        df, charter["target"], charter["sensitive_attribute"]
     )
     baseline = train_baseline_model(
         df,
@@ -132,6 +138,11 @@ def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
         charter["sensitive_attribute"],
         charter["metric_key"],
     )
+    proxy = detect_proxy_from_artifacts(baseline)
+    print("AUDIT dataset shape:", baseline.diagnostics["dataset_shape"])
+    print("AUDIT train group counts:", baseline.diagnostics["group_counts_train"])
+    print("AUDIT test group counts:", baseline.diagnostics["group_counts_test"])
+    print("AUDIT baseline metrics:", baseline.metrics)
     random_forest = train_random_forest_from_artifacts(baseline, charter["metric_key"])
     model_comparison = multi_model_comparison(baseline, random_forest)
     reweighted = train_reweighted_model(baseline, charter["metric_key"])
@@ -141,14 +152,16 @@ def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
     postprocessed = run_postprocessing(baseline, charter["metric_key"])
     best_name = "Fairlearn Constraint"
     best_result = constrained
+    x_test_with_sensitive = baseline.x_test.copy()
+    x_test_with_sensitive[charter["sensitive_attribute"]] = baseline.a_test
     baseline_cf = run_counterfactual_test(
         baseline.model,
-        baseline.x_test,
+        x_test_with_sensitive,
         charter["sensitive_attribute"],
     )
     cf = run_counterfactual_test(
         best_result["model"],
-        baseline.x_test,
+        x_test_with_sensitive,
         charter["sensitive_attribute"],
     )
     second_feature = next(
@@ -164,7 +177,7 @@ def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
     )
     robustness = run_robustness_tests(
         best_result["model"],
-        baseline.x_test,
+        x_test_with_sensitive,
         baseline.y_test,
         baseline.a_test,
         charter["sensitive_attribute"],
@@ -175,6 +188,8 @@ def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
     tradeoff_curve = fairness_tradeoff_curve(baseline, charter["metric_key"])
     impact = fairness_impact_summary(baseline.metrics, best_result["metrics"])
     trust = ai_trust_score(best_result["metrics"], robustness, cf, uncertainty)
+    print("AUDIT mitigated metrics:", best_result["metrics"])
+    print("AUDIT robustness:", robustness)
     return {
         "audit": audit,
         "proxy": proxy,
@@ -231,14 +246,16 @@ def main():
         "Fairness Governance System",
         "A demo-ready AI governance cockpit for bias detection, mitigation, proxy awareness, robustness, and audit reporting.",
     )
+    render_pipeline_strip()
     df = load_dataset()
 
     st.sidebar.header("Fairness Charter")
-    target = st.sidebar.selectbox("Target (Y)", df.columns, index=len(df.columns) - 1)
+    default_target = df.columns.get_loc("income") if "income" in df.columns else len(df.columns) - 1
+    target = st.sidebar.selectbox("Target (Y)", df.columns, index=default_target)
     sensitive_options = [c for c in df.columns if c != target]
     default_sensitive = (
-        sensitive_options.index("sensitive_group")
-        if "sensitive_group" in sensitive_options
+        sensitive_options.index("sex")
+        if "sex" in sensitive_options
         else 0
     )
     sensitive = st.sidebar.selectbox(
@@ -251,7 +268,7 @@ def main():
         "Fairness Strength (ε)",
         min_value=0.01,
         max_value=0.10,
-        value=0.05,
+        value=0.03,
         step=0.01,
         help="Low ε applies stronger fairness pressure. High ε gives the model more room to optimize accuracy.",
     )
@@ -313,6 +330,8 @@ def main():
     c2.metric("Equal Opportunity Gap", f"{results['audit']['equal_opportunity_gap']:.3f}")
     c3.metric("Bias Flag", str(results["audit"]["bias_flag"]))
     st.dataframe(results["audit"]["group_table"], use_container_width=True)
+    with st.expander("Audit split diagnostics", expanded=False):
+        st.json(results["baseline"].diagnostics)
 
     section_title("Tier 2: Proxy Detection", "Random Forest audit model tests whether features can infer the sensitive attribute.")
     st.metric("Sensitive Attribute AUC", f"{results['proxy']['auc']:.3f}")
@@ -383,6 +402,7 @@ def main():
             robustness=results["robustness"],
             impact=results["impact"],
             trust=results["trust"],
+            diagnostics=results["baseline"].diagnostics,
         )
         with open(generated, "rb") as handle:
             st.download_button(

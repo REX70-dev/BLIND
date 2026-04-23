@@ -24,6 +24,7 @@ def generate_pdf_report(
     robustness: dict | None = None,
     impact: dict | None = None,
     trust: dict | None = None,
+    diagnostics: dict | None = None,
 ) -> str:
     """Create an audit-ready PDF with the core governance evidence."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -51,6 +52,7 @@ def generate_pdf_report(
     line(f"Generated: {datetime.now().isoformat(timespec='seconds')}", 22)
 
     _section(line, "Fairness Charter", charter)
+    line("Disclaimer: Results are based on the UCI Adult dataset and are for demonstration purposes only.")
     if audit:
         _section(
             line,
@@ -63,6 +65,8 @@ def generate_pdf_report(
         )
     if proxy:
         _section(line, "Proxy Detection", proxy)
+    if diagnostics:
+        _section(line, "Split Diagnostics", diagnostics)
     if before_metrics:
         _section(line, "Baseline Metrics", before_metrics)
     if after_metrics:

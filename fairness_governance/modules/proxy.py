@@ -60,6 +60,56 @@ def detect_proxy_leakage(df: pd.DataFrame, target: str, sensitive: str) -> dict:
     }
 
 
+def detect_proxy_from_artifacts(artifacts) -> dict:
+    """Predict A from the same train-only preprocessed features used by the model."""
+    preprocessor = artifacts.model.named_steps["preprocessor"]
+    x_train = preprocessor.transform(artifacts.x_train)
+    x_test = preprocessor.transform(artifacts.x_test)
+    a_train = pd.factorize(artifacts.a_train.astype(str))[0]
+    categories = list(pd.Series(artifacts.a_train.astype(str)).drop_duplicates())
+    a_test = pd.Series(artifacts.a_test.astype(str)).map(
+        {category: idx for idx, category in enumerate(categories)}
+    )
+    if a_test.isna().any():
+        return {
+            "auc": 0.0,
+            "proxy_flag": False,
+            "flagged_features": [],
+            "explanation": "Proxy audit skipped because test split contains an unseen sensitive group.",
+            "model_type": "RandomForestClassifier",
+        }
+
+    clf = RandomForestClassifier(
+        n_estimators=250,
+        min_samples_leaf=4,
+        random_state=42,
+        class_weight="balanced",
+        n_jobs=-1,
+    )
+    clf.fit(x_train, a_train)
+    scores = clf.predict_proba(x_test)[:, 1]
+    auc = float(roc_auc_score(a_test.astype(int), scores))
+    names = feature_names(preprocessor)
+    rows = [
+        {"feature": name, "importance": float(score)}
+        for name, score in zip(names, clf.feature_importances_)
+    ]
+    top_features = sorted(rows, key=lambda item: item["importance"], reverse=True)[:3]
+    if auc > 0.7:
+        explanation = "High proxy risk - model can infer sensitive attribute"
+    elif auc < 0.6:
+        explanation = "Low proxy risk"
+    else:
+        explanation = "Moderate proxy risk"
+    return {
+        "auc": auc,
+        "proxy_flag": auc > 0.7,
+        "flagged_features": top_features,
+        "explanation": explanation,
+        "model_type": "RandomForestClassifier",
+    }
+
+
 def _feature_proxy_scores(df: pd.DataFrame, target: str, sensitive: str) -> list[dict]:
     """Simple per-feature association screen for readable proxy output."""
     a_codes = pd.factorize(df[sensitive].astype(str))[0]

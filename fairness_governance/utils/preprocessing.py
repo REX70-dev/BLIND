@@ -11,10 +11,19 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 def split_dataset(df: pd.DataFrame, target: str, sensitive: str):
-    """Split a dataframe into features, target, and sensitive attribute."""
+    """Split into X, y, A before any encoding.
+
+    The sensitive attribute is deliberately removed from X to prevent direct
+    leakage into the predictive feature matrix.
+    """
     y = df[target]
     a = df[sensitive]
-    x = df.drop(columns=[target])
+    if a.nunique(dropna=True) != 2:
+        raise ValueError(
+            f"Sensitive attribute '{sensitive}' must have exactly two groups; "
+            f"found {a.nunique(dropna=True)}."
+        )
+    x = df.drop(columns=[target, sensitive])
     return x, y, a
 
 
@@ -88,6 +97,10 @@ def feature_names(preprocessor: ColumnTransformer) -> list[str]:
 
 def flip_series_values(series: pd.Series) -> pd.Series:
     """Flip binary-like sensitive values for counterfactual tests."""
+    normalized = series.astype(str).str.strip().str.lower()
+    if set(normalized.dropna().unique()).issubset({"male", "female"}):
+        return normalized.map({"male": "Female", "female": "Male"}).fillna(series)
+
     values = list(pd.Series(series).dropna().astype(str).unique())
     flipped = series.astype(str).copy()
     if len(values) >= 2:

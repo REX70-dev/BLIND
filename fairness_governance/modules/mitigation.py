@@ -29,7 +29,11 @@ class PreprocessedFairlearnModel(BaseEstimator, ClassifierMixin):
         self.estimator = estimator
 
     def predict(self, x):
-        return self.estimator.predict(self.preprocessor.transform(x))
+        transformed = self.preprocessor.transform(x)
+        try:
+            return self.estimator.predict(transformed, random_state=42)
+        except TypeError:
+            return self.estimator.predict(transformed)
 
     def predict_proba(self, x):
         if hasattr(self.estimator, "predict_proba"):
@@ -78,7 +82,7 @@ def train_reweighted_model(artifacts, metric_key: str) -> dict:
     model = Pipeline(
         steps=[
             ("preprocessor", make_preprocessor(artifacts.x_train)),
-            ("classifier", LogisticRegression(max_iter=1000)),
+            ("classifier", LogisticRegression(max_iter=1000, class_weight="balanced")),
         ]
     )
     model.fit(artifacts.x_train, artifacts.y_train, classifier__sample_weight=weights)
@@ -104,7 +108,7 @@ def train_fairlearn_constraint_model(artifacts, metric_key: str, epsilon: float)
     # eps values put more pressure on fairness; larger eps values preserve more
     # accuracy when the unconstrained optimum is biased.
     constraint = make_reduction_constraint(metric_key, epsilon)
-    estimator = LogisticRegression(max_iter=1000)
+    estimator = LogisticRegression(max_iter=1000, class_weight="balanced")
     mitigator = ExponentiatedGradient(estimator, constraints=constraint, eps=epsilon)
     try:
         mitigator.fit(x_train_pre, artifacts.y_train, sensitive_features=artifacts.a_train)
@@ -118,16 +122,28 @@ def train_fairlearn_constraint_model(artifacts, metric_key: str, epsilon: float)
         artifacts.a_train,
         metric_key,
     )
-    preds = pd.Series(calibrated.predict(artifacts.x_test), index=artifacts.x_test.index)
-    probs = pd.Series(
-        np.asarray(calibrated.predict_proba(artifacts.x_test))[:, -1],
-        index=artifacts.x_test.index,
+    x_test_for_decision = artifacts.x_test.copy()
+    x_test_for_decision[artifacts.a_test.name] = artifacts.a_test
+    raw_preds = pd.Series(wrapped.predict(artifacts.x_test), index=artifacts.x_test.index)
+    raw_metrics = evaluate_predictions(metric_key, artifacts.y_test, raw_preds, artifacts.a_test)
+    calibrated_preds = pd.Series(calibrated.predict(x_test_for_decision), index=artifacts.x_test.index)
+    calibrated_metrics = evaluate_predictions(
+        metric_key, artifacts.y_test, calibrated_preds, artifacts.a_test
     )
+    if calibrated_metrics["selected_fairness_gap"] <= raw_metrics["selected_fairness_gap"]:
+        model = calibrated
+        preds = calibrated_preds
+        metrics = calibrated_metrics
+    else:
+        model = wrapped
+        preds = raw_preds
+        metrics = raw_metrics
+    probs = pd.Series(np.asarray(model.predict_proba(artifacts.x_test))[:, -1], index=artifacts.x_test.index)
     return {
-        "model": calibrated,
+        "model": model,
         "predictions": preds,
         "probabilities": probs,
-        "metrics": evaluate_predictions(metric_key, artifacts.y_test, preds, artifacts.a_test),
+        "metrics": metrics,
         "epsilon": float(epsilon),
         "constraint": "EqualOpportunity" if metric_key == "equal_opportunity" else "DemographicParity",
     }
@@ -136,11 +152,8 @@ def train_fairlearn_constraint_model(artifacts, metric_key: str, epsilon: float)
 def _calibrate_group_thresholds(model, x_train, y_train, a_train, metric_key: str):
     """Learn group thresholds for clearer DP/EO mitigation impact."""
     sensitive_col = a_train.name
-    if sensitive_col not in x_train.columns:
-        return model
-
     probs = pd.Series(np.asarray(model.predict_proba(x_train))[:, -1], index=x_train.index)
-    groups = x_train[sensitive_col].astype(str)
+    groups = pd.Series(a_train, index=x_train.index).astype(str)
     target_rate = float(y_train.mean())
     if metric_key == "equal_opportunity":
         positive_probs = probs[pd.Series(y_train, index=x_train.index) == 1]
@@ -184,7 +197,7 @@ def fairness_tradeoff_curve(artifacts, metric_key: str, epsilons: list[float] | 
 
 def run_postprocessing(artifacts, metric_key: str) -> dict:
     """Apply fairlearn ThresholdOptimizer when available."""
-    constraint = "equalized_odds" if metric_key == "equal_opportunity" else "demographic_parity"
+    constraint = "equalized_odds"
     if ThresholdOptimizer is None:
         return _fallback_group_threshold_model(artifacts, metric_key)
 

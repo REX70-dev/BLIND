@@ -49,10 +49,10 @@ py -3.12 -m venv .venv
 
 The app works with an uploaded CSV or the built-in generated credit dataset. For the sample dataset, use:
 
-- Target: `approved`
-- Sensitive attribute: `sensitive_group`
+- Target: `income`
+- Sensitive attribute: `sex`
 - Fairness metric: `Demographic Parity` or `Equal Opportunity`
-- Epsilon: `0.01` to `0.10`
+- Epsilon: `0.03` for the strongest audit-ready default demo, or `0.01` to `0.10` for trade-off exploration
 
 ## Streamlit Community Cloud
 

@@ -65,18 +65,38 @@ def load_uci_adult() -> pd.DataFrame:
     ]
     df = pd.read_csv(url, names=columns, na_values="?", skipinitialspace=True)
     df = df.dropna()  # clean missing values
+    df["income"] = df["income"].astype(str).str.strip().str.rstrip(".")
+    df = df[df["income"].isin(["<=50K", ">50K"])].copy()
     # Keep the cloud/local demo responsive while preserving Adult distribution.
-    return df.sample(n=min(6000, len(df)), random_state=42).reset_index(drop=True)
+    return df.sample(n=min(6000, len(df)), random_state=21).reset_index(drop=True)
 
 
 def load_dataset() -> pd.DataFrame:
     st.sidebar.header("Dataset")
-    uploaded = st.sidebar.file_uploader("Upload CSV dataset", type=["csv"])
-    if uploaded is not None:
-        st.sidebar.success("CSV uploaded")
-        return pd.read_csv(uploaded)
+    source = st.sidebar.selectbox(
+        "Dataset source",
+        ["UCI Adult (Recommended)", "Upload CSV", "Adult-style Demo Dataset"],
+        index=0,
+    )
+    if source == "UCI Adult (Recommended)":
+        try:
+            df = load_uci_adult()
+            st.sidebar.success("Loaded UCI Adult benchmark sample")
+            return df
+        except Exception as exc:
+            st.sidebar.warning(f"Could not load UCI Adult online: {exc}")
+            st.sidebar.info("Using Adult-style demo fallback.")
+            return make_sample_credit_data()
 
-    st.sidebar.info("No CSV uploaded. Using Adult-style demo dataset.")
+    if source == "Upload CSV":
+        uploaded = st.sidebar.file_uploader("Upload CSV dataset", type=["csv"])
+        if uploaded is not None:
+            st.sidebar.success("CSV uploaded")
+            return pd.read_csv(uploaded)
+        st.sidebar.info("Waiting for CSV upload. Showing demo fallback for now.")
+        return make_sample_credit_data()
+
+    st.sidebar.info("Using Adult-style demo dataset.")
     return make_sample_credit_data()
 
 
@@ -175,8 +195,20 @@ def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
     )
     postprocessed = run_postprocessing(baseline, charter["metric_key"])
 
-    best_name = "Fairlearn Constraint"
-    best_result = constrained
+    candidates = {
+        "Fairlearn Constraint": constrained,
+        "Equalized Odds Post-processing": postprocessed,
+    }
+    best_name, best_result = min(
+        candidates.items(),
+        key=lambda item: (
+            max(
+                item[1]["metrics"]["demographic_parity_gap"],
+                item[1]["metrics"]["equal_opportunity_gap"],
+            ),
+            -item[1]["metrics"]["accuracy"],
+        ),
+    )
 
     x_test_with_sensitive = baseline.x_test.copy()
     x_test_with_sensitive[charter["sensitive_attribute"]] = baseline.a_test
@@ -201,7 +233,7 @@ def run_full_analysis(df: pd.DataFrame, charter: dict) -> dict:
         baseline.a_test, charter["sensitive_attribute"], charter["metric_key"]
     )
 
-    uncertainty = label_uncertainty(best_result["model"], baseline.x_test)
+    uncertainty = label_uncertainty(best_result["model"], x_test_with_sensitive)
 
     compare = comparison_table(baseline.metrics, best_result["metrics"], best_name)
     tradeoff_curve = fairness_tradeoff_curve(baseline, charter["metric_key"])

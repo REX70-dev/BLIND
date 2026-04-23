@@ -37,9 +37,9 @@ def encode_binary_target(y: pd.Series) -> pd.Series:
         if len(unique) == 2:
             return pd.Series((y >= unique[-1]).astype(int), index=y.index, name=y.name)
 
-    normalized = y.astype(str).str.strip().str.lower()
-    positive = {"1", "true", "yes", "y", "approved", "approve", "accepted", "positive"}
-    negative = {"0", "false", "no", "n", "denied", "reject", "rejected", "negative"}
+    normalized = y.astype(str).str.strip().str.rstrip(".").str.lower()
+    positive = {"1", "true", "yes", "y", "approved", "approve", "accepted", "positive", ">50k"}
+    negative = {"0", "false", "no", "n", "denied", "reject", "rejected", "negative", "<=50k"}
     unique_normalized = set(normalized.dropna().unique())
     if unique_normalized and unique_normalized.issubset(positive | negative):
         return normalized.map(lambda value: 1 if value in positive else 0).astype(int)
@@ -75,7 +75,7 @@ def make_preprocessor(x: pd.DataFrame) -> ColumnTransformer:
     categorical_pipe = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="most_frequent")),
-            ("onehot", OneHotEncoder(handle_unknown="ignore")),
+            ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
         ]
     )
     return ColumnTransformer(

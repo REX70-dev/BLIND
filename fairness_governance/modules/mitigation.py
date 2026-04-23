@@ -70,6 +70,42 @@ class GroupAwareThresholdModel(BaseEstimator, ClassifierMixin):
         return (probs >= thresholds).astype(int)
 
 
+class ThresholdOptimizerModel(BaseEstimator, ClassifierMixin):
+    """Wrap Fairlearn ThresholdOptimizer so app calls stay sklearn-like."""
+
+    def __init__(self, optimizer, sensitive_col: str, default_group: str, random_state: int = 3):
+        self.optimizer = optimizer
+        self.sensitive_col = sensitive_col
+        self.default_group = default_group
+        self.random_state = random_state
+
+    def _split_features(self, x):
+        if self.sensitive_col in x.columns:
+            sensitive = x[self.sensitive_col].astype(str)
+            features = x.drop(columns=[self.sensitive_col])
+        else:
+            sensitive = pd.Series([self.default_group] * len(x), index=x.index)
+            features = x
+        return features, sensitive
+
+    def predict(self, x):
+        features, sensitive = self._split_features(x)
+        try:
+            return self.optimizer.predict(
+                features, sensitive_features=sensitive, random_state=self.random_state
+            )
+        except TypeError:
+            return self.optimizer.predict(features, sensitive_features=sensitive)
+
+    def predict_proba(self, x):
+        features, _ = self._split_features(x)
+        estimator = self.optimizer.estimator
+        if hasattr(estimator, "predict_proba"):
+            return estimator.predict_proba(features)
+        preds = estimator.predict(features)
+        return np.vstack([1 - preds, preds]).T
+
+
 def reweighting_weights(sensitive: pd.Series) -> pd.Series:
     """Assign inverse-frequency sample weights by sensitive group."""
     counts = sensitive.astype(str).value_counts()
@@ -213,14 +249,15 @@ def run_postprocessing(artifacts, metric_key: str) -> dict:
             artifacts.y_train,
             sensitive_features=artifacts.a_train,
         )
-        preds = pd.Series(
-            optimizer.predict(artifacts.x_test, sensitive_features=artifacts.a_test),
-            index=artifacts.x_test.index,
-        )
+        default_group = str(pd.Series(artifacts.a_train).mode().iloc[0])
+        wrapped = ThresholdOptimizerModel(optimizer, artifacts.a_train.name, default_group)
+        x_test_for_decision = artifacts.x_test.copy()
+        x_test_for_decision[artifacts.a_test.name] = artifacts.a_test
+        preds = pd.Series(wrapped.predict(x_test_for_decision), index=artifacts.x_test.index)
     except Exception:
         return _fallback_group_threshold_model(artifacts, metric_key)
     return {
-        "model": optimizer,
+        "model": wrapped,
         "predictions": preds,
         "metrics": evaluate_predictions(metric_key, artifacts.y_test, preds, artifacts.a_test),
         "constraint": constraint,

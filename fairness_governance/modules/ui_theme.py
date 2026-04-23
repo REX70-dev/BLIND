@@ -197,6 +197,10 @@ def inject_meritai_theme() -> None:
             margin-bottom: 18px;
         }
 
+        .merit-section-header {
+            margin-bottom: 18px;
+        }
+
         .merit-card {
             background: var(--merit-bg2);
             border: 1px solid var(--merit-border);
@@ -233,6 +237,15 @@ def inject_meritai_theme() -> None:
             background: rgba(255,255,255,0.04);
             color: var(--merit-text2);
             margin: 12px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .merit-notice-icon {
+            font-size: 14px;
+            line-height: 1.2;
+            flex-shrink: 0;
         }
 
         .merit-notice.success {
@@ -321,6 +334,62 @@ def inject_meritai_theme() -> None:
             opacity: 0.75;
             margin-bottom: 2px;
         }
+
+        .merit-upload-zone {
+            border: 2px dashed var(--merit-border2);
+            border-radius: 12px;
+            padding: 42px 22px;
+            background: var(--merit-bg3);
+            text-align: center;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .merit-upload-zone .icon {
+            font-size: 34px;
+            margin-bottom: 10px;
+        }
+
+        .merit-upload-zone .title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--merit-text);
+        }
+
+        .merit-upload-zone .hint {
+            font-size: 12px;
+            color: var(--merit-text3);
+        }
+
+        .merit-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .merit-inner-tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid var(--merit-border);
+            padding-bottom: 2px;
+        }
+
+        .merit-inner-tab {
+            padding: 10px 16px 8px;
+            font-size: 12px;
+            color: var(--merit-text3);
+            border-bottom: 2px solid transparent;
+        }
+
+        .merit-inner-tab.active {
+            color: var(--merit-accent);
+            border-bottom-color: var(--merit-accent);
+            margin-bottom: -3px;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -390,8 +459,10 @@ def render_pipeline_strip() -> None:
 def section_title(title: str, subtitle: str) -> None:
     st.markdown(
         f"""
-        <div class="merit-section-title">{html.escape(title)}</div>
-        <div class="merit-section-sub">{html.escape(subtitle)}</div>
+        <div class="merit-section-header">
+            <div class="merit-section-title">{html.escape(title)}</div>
+            <div class="merit-section-sub">{html.escape(subtitle)}</div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
@@ -399,7 +470,29 @@ def section_title(title: str, subtitle: str) -> None:
 
 def notice(text: str, kind: str = "info") -> None:
     kind_class = kind if kind in {"success", "warning", "danger"} else ""
+    icon = {"success": "✓", "warning": "⚠", "danger": "⚠"}.get(kind, "ℹ")
     st.markdown(
-        f'<div class="merit-notice {kind_class}">{html.escape(text)}</div>',
+        f'<div class="merit-notice {kind_class}"><span class="merit-notice-icon">{icon}</span><span>{html.escape(text)}</span></div>',
         unsafe_allow_html=True,
     )
+
+
+def upload_zone() -> None:
+    st.markdown(
+        """
+        <div class="merit-upload-zone">
+            <div class="icon">📊</div>
+            <div class="title">Drop CSV file here or use the uploader</div>
+            <div class="hint">Supports custom tabular fairness datasets with a binary target and a binary sensitive attribute.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def inner_tabs(labels: list[str], active_index: int = 0) -> None:
+    tabs = []
+    for idx, label in enumerate(labels):
+        active = " active" if idx == active_index else ""
+        tabs.append(f'<span class="merit-inner-tab{active}">{html.escape(label)}</span>')
+    st.markdown(f'<div class="merit-inner-tabs">{"".join(tabs)}</div>', unsafe_allow_html=True)

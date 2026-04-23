@@ -42,10 +42,12 @@ from fairness_governance.modules.summary import ai_trust_score, bias_label, fair
 from fairness_governance.modules.ui_theme import (
     hero,
     inject_meritai_theme,
+    inner_tabs,
     notice,
     render_header,
     render_pipeline_strip,
     section_title,
+    upload_zone,
 )
 from fairness_governance.modules.uncertainty import label_uncertainty
 from fairness_governance.utils.sample_data import make_sample_credit_data
@@ -297,6 +299,16 @@ def prediction_form(model, df: pd.DataFrame, target: str):
         st.success(f"Prediction: {pred} | Positive probability: {proba:.3f}")
 
 
+def dataset_summary_cards(df: pd.DataFrame):
+    numeric_count = int(len(df.select_dtypes(include="number").columns))
+    categorical_count = int(df.shape[1] - numeric_count)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Rows", f"{len(df):,}")
+    c2.metric("Columns", str(df.shape[1]))
+    c3.metric("Numeric", str(numeric_count))
+    c4.metric("Categorical", str(categorical_count))
+
+
 def main():
     inject_meritai_theme()
     render_header()
@@ -343,13 +355,21 @@ def main():
         "The sensitive attribute is removed from predictive features, then used only for fairness auditing, constraints, and post-processing controls.",
         "success",
     )
+    left, right = st.columns([1.1, 1])
+    with left:
+        upload_zone()
+    with right:
+        st.markdown('<div class="merit-card"><div class="merit-card-title">Dataset Summary</div>', unsafe_allow_html=True)
+        dataset_summary_cards(df)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown('<div class="merit-card"><div class="merit-card-title">Active Charter</div>', unsafe_allow_html=True)
+    st.markdown('<div class="merit-card"><div class="merit-card-title">Target Variable Selection</div>', unsafe_allow_html=True)
     st.json(charter)
     st.markdown("</div>", unsafe_allow_html=True)
 
-    with st.expander("Dataset Preview", expanded=True):
-        st.dataframe(df.head(50), use_container_width=True)
+    st.markdown('<div class="merit-card"><div class="merit-card-title">Data Preview (first 50 rows)</div>', unsafe_allow_html=True)
+    st.dataframe(df.head(50), use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     analysis_key = (target, sensitive, fairness_metric, round(epsilon, 2), len(df))
     run_clicked = st.button("🚀 Run Full Bias Analysis & Fix", type="primary")
@@ -374,6 +394,7 @@ def main():
     show_metric_cards(results["baseline"].metrics, "Before Fix")
 
     section_title("Tier 1: Data Audit", "Group outcome rates and initial label imbalance.")
+    inner_tabs(["Overview", "Group Rates", "Schema"])
     c1, c2, c3 = st.columns(3)
     c1.metric("Demographic Parity Gap", f"{results['audit']['demographic_parity_gap']:.3f}")
     c2.metric("Equal Opportunity Gap", f"{results['audit']['equal_opportunity_gap']:.3f}")
@@ -404,6 +425,7 @@ def main():
     notice(results["impact"]["summary"], "success")
 
     section_title("Tiers 4-6: Mitigation, Post-processing, Evaluation", "Compare reweighting, reduction constraints, and post-processing results.")
+    inner_tabs(["Threshold Optimizer", "Trade-off", "Before / After"], active_index=0)
     st.dataframe(style_metric_table(mitigation_summary(results)), use_container_width=True)
     st.dataframe(results["comparison"], use_container_width=True)
     st.plotly_chart(bar_chart(results["comparison"]), use_container_width=True)
@@ -423,6 +445,7 @@ def main():
     st.dataframe(results["counterfactual"]["examples"], use_container_width=True)
 
     section_title("Tier 8: Intersectional Analysis", "Subgroup fairness across protected attribute intersections.")
+    inner_tabs(["Overview", "Intersection Heat"], active_index=0)
     st.dataframe(results["intersectional"], use_container_width=True)
 
     section_title("Tier 9: Robustness Testing", "Fairness stability under adversarial numeric noise and attribute swap tests.")
@@ -431,6 +454,7 @@ def main():
     section_title("Tier 10: Uncertainty Module", "Low-confidence decisions are flagged for human review.")
     st.dataframe(results["uncertainty"].head(50), use_container_width=True)
 
+    section_title("Decision Simulation", "Interactive case-level prediction using the selected mitigated model.")
     prediction_form(results["best"]["model"], df, target)
 
     section_title("Tier 12: Audit Report", "Generate an audit-ready PDF report with charter, metrics, impact, and robustness evidence.")

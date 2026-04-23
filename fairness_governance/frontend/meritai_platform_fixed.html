@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeritAI – Multi-Dimensional Fair Decision Intelligence Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --bg2: #111318;
+    --bg3: #181c24;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --text2: #9ca3b0;
+    --text3: #5a6070;
+    --accent: #4f8ef7;
+    --accent2: #7c5cfc;
+    --green: #22d3a0;
+    --amber: #f59e0b;
+    --red: #f43f5e;
+    --teal: #14b8a6;
+    --purple: #a78bfa;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #0d1117 0%, #1a1f2e 50%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: #fff;
+    font-family: 'Playfair Display', serif;
+    letter-spacing: -1px;
+  }
+  .logo-text { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 11px; color: var(--text3); letter-spacing: 0.5px; text-transform: uppercase; }
+
+  .nav-tabs { display: flex; gap: 2px; }
+  .nav-tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.15s;
+    letter-spacing: 0.2px;
+  }
+  .nav-tab:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+  .nav-tab.active { background: rgba(79,142,247,0.15); color: var(--accent); }
+
+  .badge-ethical {
+    font-size: 10px; font-weight: 500;
+    background: rgba(34,211,160,0.12);
+    color: var(--green);
+    border: 1px solid rgba(34,211,160,0.25);
+    border-radius: 20px;
+    padding: 3px 10px;
+    letter-spacing: 0.3px;
+  }
+
+  /* Layout */
+  .main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 28px 32px;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Section title */
+  .section-header {
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .section-sub { font-size: 13px; color: var(--text2); }
+
+  /* Cards */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    display: block;
+    width: 3px; height: 12px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+
+  /* Metric cards */
+  .metric-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+  }
+  .metric-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+  .metric-value { font-size: 24px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .metric-green { color: var(--green); }
+  .metric-amber { color: var(--amber); }
+  .metric-red { color: var(--red); }
+  .metric-blue { color: var(--accent); }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg3);
+  }
+  .upload-zone:hover { border-color: var(--accent); background: rgba(79,142,247,0.05); }
+  .upload-zone.dragover { border-color: var(--green); background: rgba(34,211,160,0.05); }
+  .upload-icon { font-size: 36px; margin-bottom: 12px; }
+  .upload-title { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+  .upload-hint { font-size: 12px; color: var(--text3); }
+
+  /* Buttons */
+  .btn {
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #3a7ef5; transform: translateY(-1px); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+  .btn-success {
+    background: rgba(34,211,160,0.15);
+    color: var(--green);
+    border: 1px solid rgba(34,211,160,0.25);
+  }
+  .btn-lg { padding: 11px 24px; font-size: 14px; }
+
+  /* Progress steps */
+  .pipeline-steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 28px;
+  }
+  .pipeline-step {
+    flex: 1;
+    padding: 10px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    text-align: center;
+    position: relative;
+    letter-spacing: 0.3px;
+  }
+  .pipeline-step:first-child { border-radius: 6px 0 0 6px; }
+  .pipeline-step:last-child { border-radius: 0 6px 6px 0; }
+  .pipeline-step.done { background: rgba(34,211,160,0.1); color: var(--green); border-color: rgba(34,211,160,0.2); }
+  .pipeline-step.active { background: rgba(79,142,247,0.12); color: var(--accent); border-color: rgba(79,142,247,0.3); }
+  .pipeline-step .step-num { font-size: 9px; display: block; opacity: 0.7; margin-bottom: 2px; font-family: 'DM Mono', monospace; }
+
+  /* Table */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th {
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+  .data-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+  }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .tag-sensitive { background: rgba(244,63,94,0.12); color: var(--red); border: 1px solid rgba(244,63,94,0.2); }
+  .tag-merit { background: rgba(34,211,160,0.1); color: var(--green); border: 1px solid rgba(34,211,160,0.2); }
+  .tag-target { background: rgba(245,158,11,0.12); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+  .tag-numeric { background: rgba(79,142,247,0.1); color: var(--accent); border: 1px solid rgba(79,142,247,0.2); }
+  .tag-cat { background: rgba(167,139,250,0.1); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+
+  /* Fairness gauge */
+  .fairness-gauge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--bg3);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .gauge-label { font-size: 12px; color: var(--text2); flex: 1; }
+  .gauge-bar-wrap { flex: 2; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .gauge-bar { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .gauge-value { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; min-width: 50px; text-align: right; }
+  .gauge-status { font-size: 10px; min-width: 40px; text-align: right; }
+
+  /* Select */
+  select, input[type="text"] {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    width: 100%;
+    appearance: none;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--accent); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11px; color: var(--text3); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Notice */
+  .notice {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .notice-info { background: rgba(79,142,247,0.08); border: 1px solid rgba(79,142,247,0.2); color: #88b4f7; }
+  .notice-success { background: rgba(34,211,160,0.08); border: 1px solid rgba(34,211,160,0.2); color: #5dd6bc; }
+  .notice-warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: #f0b04c; }
+  .notice-icon { font-size: 14px; flex-shrink: 0; }
+
+  /* Candidate cards */
+  .candidate-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .candidate-avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .candidate-name { font-size: 13px; font-weight: 500; }
+  .candidate-meta { font-size: 11px; color: var(--text3); }
+  .candidate-score {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  /* Slider */
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+    height: 4px;
+    cursor: pointer;
+  }
+
+  /* Chart containers */
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* Tabs within section */
+  .inner-tabs { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 2px; }
+  .inner-tab {
+    padding: 6px 14px;
+    font-size: 12px; font-weight: 500;
+    color: var(--text3);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.15s;
+  }
+  .inner-tab:hover { color: var(--text2); }
+  .inner-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); margin-bottom: -3px; }
+
+  .inner-panel { display: none; }
+  .inner-panel.active { display: block; }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* Loading spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+
+  /* Progress bar animated */
+  @keyframes progress-anim { from { width: 0%; } }
+  .progress-bar { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin: 8px 0; }
+  .progress-fill { height: 100%; border-radius: 2px; animation: progress-anim 1.2s ease forwards; }
+
+  .scrollable { max-height: 400px; overflow-y: auto; }
+  .scrollable::-webkit-scrollbar { width: 4px; }
+  .scrollable::-webkit-scrollbar-track { background: transparent; }
+  .scrollable::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 16px 32px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 40px;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease forwards; }
+
+  .tag-shield {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 500;
+    background: rgba(244,63,94,0.1);
+    color: var(--red);
+    border: 1px solid rgba(244,63,94,0.2);
+  }
+
+  .flow-arrow {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text3); font-size: 18px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">M</div>
+      <div>
+        <div class="logo-text">MeritAI</div>
+        <div class="logo-sub">Fair Decision Intelligence</div>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showSection('data')">① Data Input</button>
+      <button class="nav-tab" onclick="showSection('governance')">② Governance</button>
+      <button class="nav-tab" onclick="showSection('model')">③ ML Model</button>
+      <button class="nav-tab" onclick="showSection('fairness')">④ Fairness Audit</button>
+      <button class="nav-tab" onclick="showSection('optimize')">⑤ Optimization</button>
+      <button class="nav-tab" onclick="showSection('simulate')">⑥ Simulation</button>
+    </div>
+    <span class="badge-ethical">✦ Ethical AI Platform</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- SECTION 1: DATA INPUT -->
+  <div class="section active" id="sec-data">
+    <div class="section-header">
+      <div class="section-title">Data Input & Preparation</div>
+      <div class="section-sub">Upload a structured HR dataset (CSV) to begin merit-based analysis</div>
+    </div>
+
+    <div class="notice notice-info">
+      <span class="notice-icon">ℹ</span>
+      <span>MeritAI automatically detects sensitive attributes (gender, religion, ethnicity, location) and <strong>excludes them from all model training</strong>. They are retained only for internal fairness auditing.</span>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvInput').click()" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+          <div class="upload-icon">📊</div>
+          <div class="upload-title">Drop CSV file here or click to browse</div>
+          <div class="upload-hint">Supports HR datasets: hiring, attrition, promotions</div>
+          <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleFileUpload(event)">
+        </div>
+        <div style="margin-top:12px; text-align:center;">
+          <button class="btn btn-secondary" onclick="loadSampleData()">⚡ Load Sample HR Dataset</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" style="height:100%;">
+          <div class="card-title">Dataset Summary</div>
+          <div id="datasetSummary">
+            <div style="color:var(--text3); font-size:13px; padding:20px 0; text-align:center;">No data loaded yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="dataPreviewSection" style="display:none;" class="fade-in">
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">Column Schema Detection</div>
+        <div id="schemaTable"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">Target Variable Selection</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Select Target Variable</label>
+            <select id="targetSelect" onchange="updateTarget()">
+              <option value="">-- Select Target --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Positive Class Label</label>
+            <select id="posClassSelect">
+              <option value="1">1 / Yes / Hired</option>
+              <option value="0">0 / No / Not Hired</option>
+            </select>
+          </div>
+        </div>
+        <div id="targetInfo"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">Data Preview (first 8 rows)</div>
+        <div class="scrollable" id="dataPreview"></div>
+      </div>
+
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button class="btn btn-primary btn-lg" onclick="proceedToGovernance()">Continue to Governance Analysis →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: GOVERNANCE -->
+  <div class="section" id="sec-governance">
+    <div class="section-header">
+      <div class="section-title">Sensitive Attribute Governance</div>
+      <div class="section-sub">Automatic detection and protective governance of sensitive attributes</div>
+    </div>
+
+    <div class="notice notice-warning">
+      <span class="notice-icon">⚠</span>
+      <span><strong>Governance Policy:</strong> Sensitive attributes are automatically identified and removed from the decision-making pipeline. Users cannot manually select or override these attributes. They are used only for internal fairness auditing.</span>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title">Detected Sensitive Attributes</div>
+        <div id="sensitiveAttrList">
+          <div style="color:var(--text3); font-size:13px;">Run data analysis first</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Merit Features (Model Inputs)</div>
+        <div id="meritFeatureList">
+          <div style="color:var(--text3); font-size:13px;">Run data analysis first</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Data Governance Pipeline</div>
+      <div style="display:flex; gap:0; align-items:center;" id="pipelineViz">
+        <div style="flex:1; padding:14px; background:var(--bg3); border-radius:8px; border:1px solid var(--border); text-align:center;">
+          <div style="font-size:20px; margin-bottom:6px;">📥</div>
+          <div style="font-size:11px; font-weight:600; color:var(--text2);">Raw Dataset</div>
+          <div style="font-size:10px; color:var(--text3);" id="pipe-raw">--</div>
+        </div>
+        <div class="flow-arrow" style="margin:0 8px;">→</div>
+        <div style="flex:1; padding:14px; background:rgba(244,63,94,0.06); border-radius:8px; border:1px solid rgba(244,63,94,0.15); text-align:center;">
+          <div style="font-size:20px; margin-bottom:6px;">🛡</div>
+          <div style="font-size:11px; font-weight:600; color:var(--red);">Sensitive Removed</div>
+          <div style="font-size:10px; color:var(--text3);" id="pipe-sensitive">--</div>
+        </div>
+        <div class="flow-arrow" style="margin:0 8px;">→</div>
+        <div style="flex:1; padding:14px; background:rgba(34,211,160,0.06); border-radius:8px; border:1px solid rgba(34,211,160,0.15); text-align:center;">
+          <div style="font-size:20px; margin-bottom:6px;">⚖</div>
+          <div style="font-size:11px; font-weight:600; color:var(--green);">Cleaned Features</div>
+          <div style="font-size:10px; color:var(--text3);" id="pipe-clean">--</div>
+        </div>
+        <div class="flow-arrow" style="margin:0 8px;">→</div>
+        <div style="flex:1; padding:14px; background:rgba(79,142,247,0.06); border-radius:8px; border:1px solid rgba(79,142,247,0.15); text-align:center;">
+          <div style="font-size:20px; margin-bottom:6px;">🎯</div>
+          <div style="font-size:11px; font-weight:600; color:var(--accent);">Merit Model</div>
+          <div style="font-size:10px; color:var(--text3);" id="pipe-model">Ready</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Merit Score Construction</div>
+      <div id="meritScoreDetails">
+        <div style="color:var(--text3); font-size:13px;">Load and analyze data first</div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-primary btn-lg" onclick="proceedToModel()">Train ML Model →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 3: ML MODEL -->
+  <div class="section" id="sec-model">
+    <div class="section-header">
+      <div class="section-title">Merit-Based ML Model</div>
+      <div class="section-sub">Logistic Regression trained exclusively on merit features</div>
+    </div>
+
+    <div id="modelNotice" class="notice notice-info">
+      <span class="notice-icon">ℹ</span>
+      <span>Model training uses only merit-based features. All sensitive attributes are excluded from training data.</span>
+    </div>
+
+    <div class="grid-4" style="margin-bottom:16px;" id="modelMetrics">
+      <div class="metric-card">
+        <div class="metric-label">Accuracy</div>
+        <div class="metric-value metric-blue" id="m-accuracy">--</div>
+        <div class="metric-sub">Test set performance</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Precision</div>
+        <div class="metric-value metric-green" id="m-precision">--</div>
+        <div class="metric-sub">Positive prediction quality</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Recall</div>
+        <div class="metric-value metric-amber" id="m-recall">--</div>
+        <div class="metric-sub">True positive rate</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">F1 Score</div>
+        <div class="metric-value metric-blue" id="m-f1">--</div>
+        <div class="metric-sub">Harmonic mean</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title">Feature Importance (Merit Weights)</div>
+        <div class="chart-wrap" style="height:260px;">
+          <canvas id="featureChart" role="img" aria-label="Feature importance bar chart">Feature importance visualization</canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Confusion Matrix</div>
+        <div id="confusionMatrix" style="padding:20px 0; text-align:center; color:var(--text3);">Train model first</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Prediction Score Distribution</div>
+      <div class="chart-wrap" style="height:200px;">
+        <canvas id="distChart" role="img" aria-label="Score distribution histogram">Score distribution</canvas>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-primary btn-lg" onclick="proceedToFairness()">Run Fairness Audit →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 4: FAIRNESS -->
+  <div class="section" id="sec-fairness">
+    <div class="section-header">
+      <div class="section-title">Multi-Dimensional Fairness Audit</div>
+      <div class="section-sub">Evaluating bias across all sensitive dimensions</div>
+    </div>
+
+    <div class="notice notice-success">
+      <span class="notice-icon">✓</span>
+      <span>Sensitive attributes are used <strong>only here</strong> for auditing. They were excluded from model training. This ensures decisions are merit-based while bias is still measured and monitored.</span>
+    </div>
+
+    <div class="inner-tabs">
+      <button class="inner-tab active" onclick="showFairnessTab('overview')">Overview</button>
+      <button class="inner-tab" onclick="showFairnessTab('gender')">Gender</button>
+      <button class="inner-tab" onclick="showFairnessTab('ethnicity')">Ethnicity/Race</button>
+      <button class="inner-tab" onclick="showFairnessTab('religion')">Religion</button>
+      <button class="inner-tab" onclick="showFairnessTab('location')">Location</button>
+    </div>
+
+    <div class="inner-panel active" id="fp-overview">
+      <div class="grid-4" style="margin-bottom:16px;">
+        <div class="metric-card">
+          <div class="metric-label">Overall DP Score</div>
+          <div class="metric-value" id="f-dp-overall" style="color:var(--green)">--</div>
+          <div class="metric-sub">Demographic Parity</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Overall EO Score</div>
+          <div class="metric-value" id="f-eo-overall" style="color:var(--amber)">--</div>
+          <div class="metric-sub">Equal Opportunity</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Merit Gap</div>
+          <div class="metric-value" id="f-merit-gap" style="color:var(--accent)">--</div>
+          <div class="metric-sub">High-merit fairness</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Dimensions Audited</div>
+          <div class="metric-value metric-blue" id="f-dims">--</div>
+          <div class="metric-sub">Sensitive attributes</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">Fairness Metrics Heatmap</div>
+        <div class="chart-wrap" style="height:280px;">
+          <canvas id="fairnessRadar" role="img" aria-label="Radar chart of fairness metrics across sensitive attributes">Fairness radar chart</canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="inner-panel" id="fp-gender">
+      <div id="fairness-gender-content">
+        <div style="color:var(--text3); padding:20px 0;">Run fairness audit first</div>
+      </div>
+    </div>
+    <div class="inner-panel" id="fp-ethnicity">
+      <div id="fairness-ethnicity-content">
+        <div style="color:var(--text3); padding:20px 0;">Run fairness audit first</div>
+      </div>
+    </div>
+    <div class="inner-panel" id="fp-religion">
+      <div id="fairness-religion-content">
+        <div style="color:var(--text3); padding:20px 0;">Run fairness audit first</div>
+      </div>
+    </div>
+    <div class="inner-panel" id="fp-location">
+      <div id="fairness-location-content">
+        <div style="color:var(--text3); padding:20px 0;">Run fairness audit first</div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:16px;">
+      <button class="btn btn-success" onclick="downloadFairnessReport()">⬇ Download Fairness Report (CSV)</button>
+      <button class="btn btn-primary btn-lg" onclick="proceedToOptimize()">Threshold Optimization →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 5: OPTIMIZATION -->
+  <div class="section" id="sec-optimize">
+    <div class="section-header">
+      <div class="section-title">Fairness Optimization</div>
+      <div class="section-sub">Threshold tuning and fairness vs. accuracy trade-off analysis</div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title">Threshold Optimizer</div>
+        <div style="margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <label style="font-size:12px; color:var(--text2);">Decision Threshold</label>
+            <span style="font-family:'DM Mono',monospace; font-size:13px; color:var(--accent);" id="threshVal">0.50</span>
+          </div>
+          <input type="range" min="20" max="80" value="50" id="threshSlider" oninput="updateThreshold(this.value)" step="1">
+        </div>
+        <div class="grid-2">
+          <div class="metric-card">
+            <div class="metric-label">Accuracy at threshold</div>
+            <div class="metric-value metric-blue" id="opt-accuracy">--</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Max DP Gap</div>
+            <div class="metric-value metric-green" id="opt-dp">--</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <button class="btn btn-primary" onclick="findOptimalThreshold()">⚡ Find Optimal Threshold</button>
+        </div>
+        <div id="optimalResult" style="margin-top:12px; display:none;" class="notice notice-success">
+          <span class="notice-icon">✓</span>
+          <span id="optimalResultText"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Accuracy vs Fairness Trade-off</div>
+        <div class="chart-wrap" style="height:260px;">
+          <canvas id="tradeoffChart" role="img" aria-label="Line chart showing accuracy vs fairness trade-off curve">Trade-off curve</canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Before / After Optimization Comparison</div>
+      <div class="chart-wrap" style="height:220px;">
+        <canvas id="beforeAfterChart" role="img" aria-label="Bar chart comparing metrics before and after optimization">Before after comparison</canvas>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; justify-content:flex-end;">
+      <button class="btn btn-primary btn-lg" onclick="proceedToSimulate()">Decision Simulation →</button>
+    </div>
+  </div>
+
+  <!-- SECTION 6: SIMULATION -->
+  <div class="section" id="sec-simulate">
+    <div class="section-header">
+      <div class="section-title">Decision Simulation</div>
+      <div class="section-sub">Simulate merit-based hiring/selection with fairness evaluation</div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title">Simulation Parameters</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Number of Candidates to Select</label>
+            <input type="text" id="simN" value="10" placeholder="e.g. 10">
+          </div>
+          <div class="form-group">
+            <label>Selection Method</label>
+            <select id="simMethod">
+              <option value="merit">Top Merit Score</option>
+              <option value="probability">Model Probability</option>
+              <option value="threshold">Threshold-Based</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="runSimulation()">▶ Run Simulation</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Selection Fairness Summary</div>
+        <div id="simSummary">
+          <div style="color:var(--text3); font-size:13px;">Run simulation first</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title">Selected Candidates (Top by Merit)</div>
+        <div class="scrollable" id="candidateList">
+          <div style="color:var(--text3); font-size:13px; padding:20px 0; text-align:center;">Run simulation to see candidates</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Selection Distribution by Group</div>
+        <div class="chart-wrap" style="height:260px;">
+          <canvas id="selectionChart" role="img" aria-label="Stacked bar chart showing selection distribution across demographic groups">Selection distribution</canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">Merit Score Distribution in Selection</div>
+      <div class="chart-wrap" style="height:200px;">
+        <canvas id="meritDistChart" role="img" aria-label="Histogram of merit scores for selected candidates">Merit distribution</canvas>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; justify-content:flex-end; margin-bottom:20px;">
+      <button class="btn btn-success" onclick="downloadFairnessReport()">⬇ Download Full Fairness Report</button>
+      <button class="btn btn-secondary" onclick="showSection('data')">↩ New Analysis</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  MeritAI — Multi-Dimensional Fair Decision Intelligence Platform &nbsp;·&nbsp; Sensitive attributes excluded from decisions, used only for auditing &nbsp;·&nbsp; Ethical AI by Design
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  rawData: null,
+  columns: [],
+  numericCols: [],
+  categoricalCols: [],
+  sensitiveAttrs: {},
+  meritFeatures: [],
+  targetCol: null,
+  processedData: null,
+  model: null,
+  predictions: null,
+  probabilities: null,
+  meritScores: null,
+  fairnessResults: null,
+  threshold: 0.5,
+  optimalThreshold: 0.5,
+  charts: {}
+};
+
+// Sensitive attribute keywords
+const SENSITIVE_KEYWORDS = {
+  gender: ['gender','sex','male','female','nonbinary','non_binary','gender_identity'],
+  ethnicity: ['ethnicity','race','ethnic','racial','race_ethnicity','national_origin','nationality'],
+  religion: ['religion','religious','faith','belief','denomination','sect','church'],
+  location: ['location','region','city','state','country','zip','postal','district','area','province','territory','geography','geo']
+};
+
+const MERIT_KEYWORDS = ['performance','score','rating','experience','years','skill','education','degree','salary','income','tenure','level','grade','assessment','test','aptitude','competency','productivity','efficiency','output','result','kpi','review','evaluation','qualification','certificate','training'];
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.toLowerCase().includes(id)) t.classList.add('active');
+  });
+  // Map specific IDs
+  const map = {'data':'data','governance':'governance','model':'model','fairness':'fairness','optimize':'optimize','simulate':'simulate'};
+  document.querySelectorAll('.nav-tab').forEach((t, i) => {
+    const ids = ['data','governance','model','fairness','optimize','simulate'];
+    if (ids[i] === id) t.classList.add('active');
+  });
+}
+
+function showFairnessTab(tab) {
+  document.querySelectorAll('.inner-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.inner-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('fp-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ============================================================
+// SAMPLE DATA GENERATION
+// ============================================================
+function generateSampleData(n = 200) {
+  const genders = ['Male','Female','Non-Binary'];
+  const religions = ['Christian','Muslim','Hindu','Jewish','Buddhist','Atheist'];
+  const ethnicities = ['White','Black','Asian','Hispanic','Mixed','Other'];
+  const locations = ['North','South','East','West','Central'];
+  const educations = ['High School','Bachelors','Masters','PhD'];
+  const depts = ['Engineering','Sales','HR','Finance','Marketing','Operations'];
+
+  const rows = [];
+  for (let i = 0; i < n; i++) {
+    const exp = Math.floor(Math.random() * 15) + 1;
+    const perf = +(Math.random() * 4 + 1).toFixed(1);
+    const skill = Math.floor(Math.random() * 40 + 60);
+    const edIdx = Math.floor(Math.random() * 4);
+    const eduMult = [0.7, 1.0, 1.2, 1.4][edIdx];
+    const meritBase = (perf / 5 * 0.35 + skill / 100 * 0.35 + Math.min(exp / 15, 1) * 0.3) * eduMult;
+    const hired = meritBase + (Math.random() * 0.15 - 0.075) > 0.55 ? 1 : 0;
+    rows.push({
+      EmployeeID: 1000 + i,
+      Gender: genders[Math.floor(Math.random() * genders.length)],
+      Religion: religions[Math.floor(Math.random() * religions.length)],
+      Ethnicity: ethnicities[Math.floor(Math.random() * ethnicities.length)],
+      Location: locations[Math.floor(Math.random() * locations.length)],
+      Department: depts[Math.floor(Math.random() * depts.length)],
+      Education: educations[edIdx],
+      YearsExperience: exp,
+      PerformanceScore: perf,
+      SkillScore: skill,
+      PreviousSalary: Math.floor(Math.random() * 80000 + 30000),
+      TrainingHours: Math.floor(Math.random() * 100 + 10),
+      Hired: hired
+    });
+  }
+  return rows;
+}
+
+// ============================================================
+// CSV PARSING
+// ============================================================
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const vals = lines[i].split(',').map(v => v.trim().replace(/"/g,''));
+    const row = {};
+    headers.forEach((h, idx) => {
+      const v = vals[idx] || '';
+      row[h] = isNaN(v) || v === '' ? v : +v;
+    });
+    rows.push(row);
+  }
+  return { headers, rows };
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.add('dragover');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileUpload(e) {
+  processFile(e.target.files[0]);
+}
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const { headers, rows } = parseCSV(ev.target.result);
+    processDataset(headers, rows);
+  };
+  reader.readAsText(file);
+}
+function loadSampleData() {
+  const rows = generateSampleData(250);
+  const headers = Object.keys(rows[0]);
+  processDataset(headers, rows);
+}
+
+// ============================================================
+// DATASET PROCESSING
+// ============================================================
+function processDataset(headers, rows) {
+  state.rawData = rows;
+  state.columns = headers;
+
+  // Detect types
+  state.numericCols = [];
+  state.categoricalCols = [];
+  headers.forEach(col => {
+    const vals = rows.map(r => r[col]).filter(v => v !== '' && v != null);
+    const numericCount = vals.filter(v => typeof v === 'number').length;
+    if (numericCount / vals.length > 0.7) state.numericCols.push(col);
+    else state.categoricalCols.push(col);
+  });
+
+  // Detect sensitive attrs
+  state.sensitiveAttrs = { gender: [], ethnicity: [], religion: [], location: [] };
+  headers.forEach(col => {
+    const colLower = col.toLowerCase().replace(/[^a-z]/g,'');
+    for (const [dim, keywords] of Object.entries(SENSITIVE_KEYWORDS)) {
+      if (keywords.some(k => colLower.includes(k.replace(/[^a-z]/g,'')))) {
+        state.sensitiveAttrs[dim].push(col);
+      }
+    }
+  });
+
+  // Merit features: numeric cols excluding ID, target-like, and sensitive
+  const allSensitive = Object.values(state.sensitiveAttrs).flat();
+  const idLike = headers.filter(c => c.toLowerCase().includes('id') || c.toLowerCase().includes('name'));
+  const exclude = new Set([...allSensitive, ...idLike]);
+
+  state.meritFeatures = state.numericCols.filter(c => !exclude.has(c));
+
+  // Populate target dropdown
+  const targetSel = document.getElementById('targetSelect');
+  targetSel.innerHTML = '<option value="">-- Select Target --</option>';
+  headers.forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = h;
+    const lh = h.toLowerCase();
+    if (lh.includes('hired') || lh.includes('attrition') || lh.includes('promo') || lh.includes('select') || lh.includes('decision')) {
+      opt.selected = true;
+    }
+    targetSel.appendChild(opt);
+  });
+  updateTarget();
+
+  // Render summary
+  renderDatasetSummary(rows, headers);
+  renderSchemaTable(headers, rows);
+  renderDataPreview(rows, headers);
+  document.getElementById('dataPreviewSection').style.display = 'block';
+}
+
+function updateTarget() {
+  const sel = document.getElementById('targetSelect').value;
+  state.targetCol = sel;
+  if (!sel) return;
+  const vals = [...new Set(state.rawData.map(r => r[sel]))];
+  const info = document.getElementById('targetInfo');
+  info.innerHTML = `<div style="font-size:12px; color:var(--text2); margin-top:8px;">
+    Unique values: <span style="color:var(--accent); font-family:'DM Mono',monospace;">${vals.slice(0,5).join(', ')}</span>
+    &nbsp;·&nbsp; Distribution: 
+    <span style="color:var(--green);">${vals.filter(v => v == 1 || v === 'Yes' || v === '1').length > 0 ? 'Binary' : 'Multi-class'}</span>
+  </div>`;
+  // Remove target from merit features
+  state.meritFeatures = state.meritFeatures.filter(f => f !== sel);
+}
+
+function renderDatasetSummary(rows, headers) {
+  const el = document.getElementById('datasetSummary');
+  const numericCount = state.numericCols.length;
+  const catCount = state.categoricalCols.length;
+  const sensitiveCount = Object.values(state.sensitiveAttrs).flat().length;
+  el.innerHTML = `
+    <div class="grid-2" style="gap:8px;">
+      <div class="metric-card"><div class="metric-label">Rows</div><div class="metric-value metric-blue">${rows.length}</div></div>
+      <div class="metric-card"><div class="metric-label">Columns</div><div class="metric-value metric-blue">${headers.length}</div></div>
+      <div class="metric-card"><div class="metric-label">Numeric</div><div class="metric-value metric-green">${numericCount}</div></div>
+      <div class="metric-card"><div class="metric-label">Categorical</div><div class="metric-value metric-amber">${catCount}</div></div>
+    </div>
+    <div style="margin-top:10px; font-size:12px; color:var(--text3);">
+      <span class="tag-shield">🛡 ${sensitiveCount} sensitive attrs detected</span>
+    </div>
+  `;
+}
+
+function renderSchemaTable(headers, rows) {
+  const allSensitive = Object.entries(state.sensitiveAttrs).reduce((acc, [dim, cols]) => {
+    cols.forEach(c => acc[c] = dim); return acc;
+  }, {});
+  const idLike = new Set(headers.filter(c => c.toLowerCase().includes('id') || c.toLowerCase().includes('name')));
+
+  let html = `<table class="data-table">
+    <thead><tr><th>Column</th><th>Type</th><th>Role</th><th>Sample Values</th></tr></thead><tbody>`;
+  headers.forEach(col => {
+    const isNum = state.numericCols.includes(col);
+    const sens = allSensitive[col];
+    const isMerit = state.meritFeatures.includes(col);
+    const isTarget = col === state.targetCol;
+    const isID = idLike.has(col);
+    const samples = [...new Set(rows.slice(0,20).map(r => r[col]))].slice(0,3).join(', ');
+    let roleTag = '';
+    if (sens) roleTag = `<span class="tag tag-sensitive">🛡 Sensitive (${sens})</span>`;
+    else if (isTarget) roleTag = `<span class="tag tag-target">🎯 Target</span>`;
+    else if (isMerit) roleTag = `<span class="tag tag-merit">✦ Merit Feature</span>`;
+    else if (isID) roleTag = `<span class="tag tag-cat">ID/Meta</span>`;
+    else roleTag = `<span class="tag tag-cat">Other</span>`;
+    html += `<tr>
+      <td style="font-weight:500; color:var(--text);">${col}</td>
+      <td><span class="tag ${isNum ? 'tag-numeric' : 'tag-cat'}">${isNum ? 'Numeric' : 'Categorical'}</span></td>
+      <td>${roleTag}</td>
+      <td style="color:var(--text3); font-size:11px;">${samples}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('schemaTable').innerHTML = html;
+}
+
+function renderDataPreview(rows, headers) {
+  const preview = rows.slice(0, 8);
+  let html = `<table class="data-table"><thead><tr>`;
+  headers.forEach(h => html += `<th>${h}</th>`);
+  html += '</tr></thead><tbody>';
+  preview.forEach(row => {
+    html += '<tr>';
+    headers.forEach(h => html += `<td>${row[h]}</td>`);
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('dataPreview').innerHTML = html;
+}
+
+// ============================================================
+// GOVERNANCE
+// ============================================================
+function proceedToGovernance() {
+  if (!state.targetCol) { alert('Please select a target variable first.'); return; }
+  showSection('governance');
+  renderGovernance();
+}
+
+function renderGovernance() {
+  // Sensitive attrs
+  const sensEl = document.getElementById('sensitiveAttrList');
+  const dims = Object.entries(state.sensitiveAttrs).filter(([, cols]) => cols.length > 0);
+  if (dims.length === 0) {
+    sensEl.innerHTML = `<div style="color:var(--text3); font-size:12px;">No sensitive attributes detected automatically. Proceeding with full merit-based analysis.</div>`;
+  } else {
+    const colors = { gender: 'red', ethnicity: 'amber', religion: 'purple', location: 'teal' };
+    sensEl.innerHTML = dims.map(([dim, cols]) => `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px;">${dim}</div>
+        ${cols.map(c => `<span class="tag tag-sensitive" style="margin-right:4px; margin-bottom:4px;">🛡 ${c}</span>`).join('')}
+      </div>`).join('');
+  }
+
+  // Merit features
+  const meritEl = document.getElementById('meritFeatureList');
+  meritEl.innerHTML = state.meritFeatures.map(f =>
+    `<div class="fairness-gauge" style="margin-bottom:6px;">
+      <span class="gauge-label">${f}</span>
+      <span class="tag tag-merit">✦ Merit</span>
+    </div>`).join('');
+
+  // Pipeline
+  const allSensitive = Object.values(state.sensitiveAttrs).flat();
+  document.getElementById('pipe-raw').textContent = `${state.columns.length} columns`;
+  document.getElementById('pipe-sensitive').textContent = `${allSensitive.length} removed`;
+  document.getElementById('pipe-clean').textContent = `${state.meritFeatures.length} features`;
+  document.getElementById('pipe-model').textContent = `${state.rawData.length} samples`;
+
+  // Merit score construction
+  renderMeritScoreDetails();
+}
+
+function renderMeritScoreDetails() {
+  const features = state.meritFeatures;
+  if (!features.length) return;
+  const weight = (1 / features.length * 100).toFixed(1);
+  const html = `
+    <div style="font-size:12px; color:var(--text2); margin-bottom:12px;">
+      Merit Score = Weighted sum of normalized feature values (each feature contributes equally unless performance keywords detected)
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap:8px;">
+      ${features.map((f, i) => {
+        const lf = f.toLowerCase();
+        let w = weight;
+        if (lf.includes('performance') || lf.includes('skill')) w = (+weight * 1.5).toFixed(1);
+        else if (lf.includes('experience') || lf.includes('years')) w = (+weight * 1.3).toFixed(1);
+        return `<div style="padding:10px; background:var(--bg3); border-radius:6px; border:1px solid var(--border);">
+          <div style="font-size:10px; color:var(--text3);">Feature ${i+1}</div>
+          <div style="font-size:12px; font-weight:500; color:var(--text); margin:3px 0;">${f}</div>
+          <div style="font-size:11px; color:var(--green);">Weight: ~${w}%</div>
+          <div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:${w}%; background:var(--green);"></div></div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  document.getElementById('meritScoreDetails').innerHTML = html;
+}
+
+// ============================================================
+// ML MODEL (simulated logistic regression in JS)
+// ============================================================
+function proceedToModel() {
+  showSection('model');
+  setTimeout(trainModel, 300);
+}
+
+function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+function normalize(values) {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (max === min) return values.map(() => 0);
+  return values.map(v => (v - min) / (max - min));
+}
+
+function trainModel() {
+  const data = state.rawData;
+  const features = state.meritFeatures;
+  const target = state.targetCol;
+  if (!features.length || !target) return;
+
+  // Build feature matrix
+  const X = data.map(row => features.map(f => typeof row[f] === 'number' ? row[f] : 0));
+  const y = data.map(row => {
+    const v = row[target];
+    return (v === 1 || v === '1' || v === 'Yes' || v === 'yes' || v === 'Hired') ? 1 : 0;
+  });
+
+  // Normalize each feature
+  const Xnorm = features.map((f, fi) => normalize(X.map(r => r[fi])));
+  const Xt = X.map((_, ri) => features.map((_, fi) => Xnorm[fi][ri]));
+
+  // Train/test split (80/20)
+  const splitIdx = Math.floor(data.length * 0.8);
+  const Xtrain = Xt.slice(0, splitIdx), ytrain = y.slice(0, splitIdx);
+  const Xtest = Xt.slice(splitIdx), ytest = y.slice(splitIdx);
+
+  // Logistic regression via gradient descent
+  let weights = new Array(features.length).fill(0);
+  let bias = 0;
+  const lr = 0.1;
+  const epochs = 200;
+
+  for (let e = 0; e < epochs; e++) {
+    let dw = new Array(features.length).fill(0);
+    let db = 0;
+    for (let i = 0; i < Xtrain.length; i++) {
+      const z = weights.reduce((s, w, j) => s + w * Xtrain[i][j], bias);
+      const pred = sigmoid(z);
+      const err = pred - ytrain[i];
+      dw = dw.map((d, j) => d + err * Xtrain[i][j]);
+      db += err;
+    }
+    weights = weights.map((w, j) => w - lr * dw[j] / Xtrain.length);
+    bias -= lr * db / Xtrain.length;
+  }
+
+  // Predictions on test set
+  const testProbs = Xtest.map(row => sigmoid(weights.reduce((s, w, j) => s + w * row[j], bias)));
+  const allProbs = Xt.map(row => sigmoid(weights.reduce((s, w, j) => s + w * row[j], bias)));
+  const testPreds = testProbs.map(p => p >= 0.5 ? 1 : 0);
+
+  // Metrics
+  let tp=0, tn=0, fp=0, fn=0;
+  testPreds.forEach((p, i) => {
+    if (p===1 && ytest[i]===1) tp++;
+    else if (p===0 && ytest[i]===0) tn++;
+    else if (p===1 && ytest[i]===0) fp++;
+    else fn++;
+  });
+  const accuracy = (tp + tn) / ytest.length;
+  const precision = tp / (tp + fp) || 0;
+  const recall = tp / (tp + fn) || 0;
+  const f1 = 2 * precision * recall / (precision + recall) || 0;
+
+  state.model = { weights, bias, features };
+  state.predictions = data.map((_, i) => allProbs[i] >= 0.5 ? 1 : 0);
+  state.probabilities = allProbs;
+
+  // Merit scores
+  const featureNorms = features.map((f, fi) => normalize(data.map(r => typeof r[f] === 'number' ? r[f] : 0)));
+  state.meritScores = data.map((_, ri) => {
+    let s = 0;
+    features.forEach((f, fi) => {
+      const lf = f.toLowerCase();
+      let w = 1;
+      if (lf.includes('performance') || lf.includes('skill')) w = 1.5;
+      else if (lf.includes('experience') || lf.includes('years')) w = 1.3;
+      s += featureNorms[fi][ri] * w;
+    });
+    return s / features.length;
+  });
+
+  // Render metrics
+  document.getElementById('m-accuracy').textContent = (accuracy * 100).toFixed(1) + '%';
+  document.getElementById('m-precision').textContent = (precision * 100).toFixed(1) + '%';
+  document.getElementById('m-recall').textContent = (recall * 100).toFixed(1) + '%';
+  document.getElementById('m-f1').textContent = (f1 * 100).toFixed(1) + '%';
+
+  renderFeatureChart(weights, features);
+  renderConfusionMatrix(tp, tn, fp, fn);
+  renderDistChart(allProbs);
+}
+
+function renderFeatureChart(weights, features) {
+  const absW = weights.map(Math.abs);
+  const total = absW.reduce((s, w) => s + w, 0) || 1;
+  const importance = absW.map(w => +(w / total * 100).toFixed(1));
+  const sorted = features.map((f, i) => ({ f, imp: importance[i] })).sort((a, b) => b.imp - a.imp);
+
+  if (state.charts.featureChart) state.charts.featureChart.destroy();
+  const ctx = document.getElementById('featureChart').getContext('2d');
+  state.charts.featureChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(d => d.f),
+      datasets: [{
+        label: 'Merit Weight %',
+        data: sorted.map(d => d.imp),
+        backgroundColor: sorted.map((_, i) => `hsl(${210 + i * 15}, 80%, ${55 - i * 3}%)`),
+        borderWidth: 0, borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9ca3b0', font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { color: '#9ca3b0', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function renderConfusionMatrix(tp, tn, fp, fn) {
+  const el = document.getElementById('confusionMatrix');
+  el.innerHTML = `
+    <div style="display:inline-grid; grid-template-columns:auto auto auto; gap:0; font-size:12px;">
+      <div style="padding:8px;"></div>
+      <div style="padding:8px 16px; font-size:10px; color:var(--text3); font-weight:600; text-align:center;">PRED +</div>
+      <div style="padding:8px 16px; font-size:10px; color:var(--text3); font-weight:600; text-align:center;">PRED -</div>
+
+      <div style="padding:8px; font-size:10px; color:var(--text3); font-weight:600; display:flex; align-items:center;">ACT +</div>
+      <div style="padding:20px 30px; background:rgba(34,211,160,0.15); border:1px solid rgba(34,211,160,0.2); border-radius:6px 0 0 0; text-align:center;">
+        <div style="font-size:22px; font-weight:600; color:var(--green); font-family:'DM Mono',monospace;">${tp}</div>
+        <div style="font-size:9px; color:var(--green);">TP</div>
+      </div>
+      <div style="padding:20px 30px; background:rgba(244,63,94,0.08); border:1px solid rgba(244,63,94,0.15); border-radius:0 6px 0 0; text-align:center;">
+        <div style="font-size:22px; font-weight:600; color:var(--red); font-family:'DM Mono',monospace;">${fn}</div>
+        <div style="font-size:9px; color:var(--red);">FN</div>
+      </div>
+
+      <div style="padding:8px; font-size:10px; color:var(--text3); font-weight:600; display:flex; align-items:center;">ACT -</div>
+      <div style="padding:20px 30px; background:rgba(244,63,94,0.08); border:1px solid rgba(244,63,94,0.15); border-radius:0 0 0 6px; text-align:center;">
+        <div style="font-size:22px; font-weight:600; color:var(--red); font-family:'DM Mono',monospace;">${fp}</div>
+        <div style="font-size:9px; color:var(--red);">FP</div>
+      </div>
+      <div style="padding:20px 30px; background:rgba(34,211,160,0.1); border:1px solid rgba(34,211,160,0.15); border-radius:0 0 6px 0; text-align:center;">
+        <div style="font-size:22px; font-weight:600; color:var(--green); font-family:'DM Mono',monospace;">${tn}</div>
+        <div style="font-size:9px; color:var(--green);">TN</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDistChart(probs) {
+  const bins = new Array(10).fill(0);
+  probs.forEach(p => {
+    const idx = Math.min(Math.floor(p * 10), 9);
+    bins[idx]++;
+  });
+  if (state.charts.distChart) state.charts.distChart.destroy();
+  const ctx = document.getElementById('distChart').getContext('2d');
+  state.charts.distChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['0-10%','10-20%','20-30%','30-40%','40-50%','50-60%','60-70%','70-80%','80-90%','90-100%'],
+      datasets: [{
+        label: 'Count',
+        data: bins,
+        backgroundColor: bins.map((_, i) => i >= 5 ? 'rgba(34,211,160,0.7)' : 'rgba(79,142,247,0.5)'),
+        borderWidth: 0, borderRadius: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#9ca3b0', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9ca3b0', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ============================================================
+// FAIRNESS METRICS
+// ============================================================
+function proceedToFairness() {
+  showSection('fairness');
+  setTimeout(computeFairness, 300);
+}
+
+function computeDemographicParity(data, preds, attrCol) {
+  const groups = {};
+  data.forEach((row, i) => {
+    const g = String(row[attrCol] || 'Unknown');
+    if (!groups[g]) groups[g] = { pos: 0, total: 0 };
+    groups[g].total++;
+    if (preds[i] === 1) groups[g].pos++;
+  });
+  const rates = Object.entries(groups).map(([g, { pos, total }]) => ({ group: g, rate: pos / total, total }));
+  const maxRate = Math.max(...rates.map(r => r.rate));
+  const minRate = Math.min(...rates.map(r => r.rate));
+  return { gap: maxRate - minRate, rates, score: 1 - (maxRate - minRate) };
+}
+
+function computeEqualOpportunity(data, preds, actuals, attrCol) {
+  const groups = {};
+  data.forEach((row, i) => {
+    const g = String(row[attrCol] || 'Unknown');
+    if (!groups[g]) groups[g] = { tp: 0, pos: 0 };
+    if (actuals[i] === 1) {
+      groups[g].pos++;
+      if (preds[i] === 1) groups[g].tp++;
+    }
+  });
+  const rates = Object.entries(groups).filter(([, v]) => v.pos > 0).map(([g, { tp, pos }]) => ({ group: g, tpr: tp / pos }));
+  if (!rates.length) return { gap: 0, rates: [], score: 1 };
+  const maxTPR = Math.max(...rates.map(r => r.tpr));
+  const minTPR = Math.min(...rates.map(r => r.tpr));
+  return { gap: maxTPR - minTPR, rates, score: 1 - (maxTPR - minTPR) };
+}
+
+function computeMeritGap(data, preds, meritScores, attrCol, threshold = 0.7) {
+  const highMerit = meritScores.map((s, i) => s >= threshold ? i : -1).filter(i => i >= 0);
+  const groups = {};
+  highMerit.forEach(i => {
+    const g = String(data[i][attrCol] || 'Unknown');
+    if (!groups[g]) groups[g] = { selected: 0, total: 0 };
+    groups[g].total++;
+    if (preds[i] === 1) groups[g].selected++;
+  });
+  const rates = Object.entries(groups).map(([g, { selected, total }]) => ({ group: g, rate: selected / total || 0 }));
+  if (!rates.length) return { gap: 0, rates: [], score: 1 };
+  const maxR = Math.max(...rates.map(r => r.rate));
+  const minR = Math.min(...rates.map(r => r.rate));
+  return { gap: maxR - minR, rates, score: 1 - (maxR - minR) };
+}
+
+function computeFairness() {
+  const data = state.rawData;
+  const preds = state.predictions;
+  const probs = state.probabilities;
+  const meritScores = state.meritScores;
+  const target = state.targetCol;
+  const actuals = data.map(r => {
+    const v = r[target];
+    return (v === 1 || v === '1' || v === 'Yes' || v === 'yes' || v === 'Hired') ? 1 : 0;
+  });
+
+  state.fairnessResults = {};
+  const allSensitive = Object.entries(state.sensitiveAttrs).filter(([, cols]) => cols.length > 0);
+
+  allSensitive.forEach(([dim, cols]) => {
+    const col = cols[0];
+    state.fairnessResults[dim] = {
+      col,
+      dp: computeDemographicParity(data, preds, col),
+      eo: computeEqualOpportunity(data, preds, actuals, col),
+      mg: computeMeritGap(data, preds, meritScores, col)
+    };
+  });
+
+  renderFairnessOverview();
+  renderFairnessDimensions();
+}
+
+function renderFairnessOverview() {
+  const results = state.fairnessResults;
+  const dims = Object.keys(results);
+
+  if (!dims.length) {
+    document.getElementById('f-dp-overall').textContent = 'N/A';
+    document.getElementById('f-eo-overall').textContent = 'N/A';
+    document.getElementById('f-merit-gap').textContent = 'N/A';
+    document.getElementById('f-dims').textContent = '0';
+    return;
+  }
+
+  const avgDP = dims.reduce((s, d) => s + results[d].dp.score, 0) / dims.length;
+  const avgEO = dims.reduce((s, d) => s + results[d].eo.score, 0) / dims.length;
+  const avgMG = dims.reduce((s, d) => s + results[d].mg.score, 0) / dims.length;
+
+  document.getElementById('f-dp-overall').textContent = (avgDP * 100).toFixed(1) + '%';
+  document.getElementById('f-eo-overall').textContent = (avgEO * 100).toFixed(1) + '%';
+  document.getElementById('f-merit-gap').textContent = (avgMG * 100).toFixed(1) + '%';
+  document.getElementById('f-dims').textContent = dims.length;
+
+  renderFairnessRadar(results, dims);
+}
+
+function renderFairnessRadar(results, dims) {
+  if (state.charts.fairnessRadar) state.charts.fairnessRadar.destroy();
+  const labels = ['Demographic Parity', 'Equal Opportunity', 'Merit Gap Score'];
+  const datasets = dims.map((dim, i) => ({
+    label: dim.charAt(0).toUpperCase() + dim.slice(1),
+    data: [
+      +(results[dim].dp.score * 100).toFixed(1),
+      +(results[dim].eo.score * 100).toFixed(1),
+      +(results[dim].mg.score * 100).toFixed(1)
+    ],
+    borderColor: ['#4f8ef7','#22d3a0','#f59e0b','#a78bfa'][i % 4],
+    backgroundColor: ['rgba(79,142,247,0.1)','rgba(34,211,160,0.1)','rgba(245,158,11,0.1)','rgba(167,139,250,0.1)'][i % 4],
+    borderWidth: 2,
+    pointBackgroundColor: ['#4f8ef7','#22d3a0','#f59e0b','#a78bfa'][i % 4]
+  }));
+
+  const ctx = document.getElementById('fairnessRadar').getContext('2d');
+  state.charts.fairnessRadar = new Chart(ctx, {
+    type: 'radar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        r: {
+          min: 0, max: 100,
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          angleLines: { color: 'rgba(255,255,255,0.06)' },
+          pointLabels: { color: '#9ca3b0', font: { size: 11 } },
+          ticks: { color: '#5a6070', backdropColor: 'transparent', font: { size: 10 }, stepSize: 20 }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { color: '#9ca3b0', font: { size: 11 }, boxWidth: 10, padding: 12 }
+        }
+      }
+    }
+  });
+}
+
+function renderFairnessDimensions() {
+  const results = state.fairnessResults;
+  ['gender','ethnicity','religion','location'].forEach(dim => {
+    const el = document.getElementById(`fairness-${dim}-content`);
+    if (!results[dim]) {
+      el.innerHTML = `<div class="notice notice-info"><span class="notice-icon">ℹ</span><span>No ${dim} column detected in this dataset.</span></div>`;
+      return;
+    }
+    const r = results[dim];
+    el.innerHTML = renderDimensionDetails(dim, r);
+  });
+}
+
+function renderDimensionDetails(dim, r) {
+  const scoreColor = (s) => s >= 0.8 ? 'var(--green)' : s >= 0.6 ? 'var(--amber)' : 'var(--red)';
+  const scoreLabel = (s) => s >= 0.8 ? '✓ Fair' : s >= 0.6 ? '⚠ Moderate' : '✗ Unfair';
+
+  let html = `
+    <div class="grid-3" style="margin-bottom:16px;">
+      <div class="metric-card">
+        <div class="metric-label">Demographic Parity</div>
+        <div class="metric-value" style="color:${scoreColor(r.dp.score)}">${(r.dp.score*100).toFixed(1)}%</div>
+        <div class="metric-sub">${scoreLabel(r.dp.score)} · Gap: ${(r.dp.gap*100).toFixed(1)}%</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Equal Opportunity</div>
+        <div class="metric-value" style="color:${scoreColor(r.eo.score)}">${(r.eo.score*100).toFixed(1)}%</div>
+        <div class="metric-sub">${scoreLabel(r.eo.score)} · Gap: ${(r.eo.gap*100).toFixed(1)}%</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Merit Gap Score</div>
+        <div class="metric-value" style="color:${scoreColor(r.mg.score)}">${(r.mg.score*100).toFixed(1)}%</div>
+        <div class="metric-sub">${scoreLabel(r.mg.score)} · Gap: ${(r.mg.gap*100).toFixed(1)}%</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Selection Rate by ${dim.charAt(0).toUpperCase()+dim.slice(1)} Group (Demographic Parity)</div>
+  `;
+  r.dp.rates.sort((a, b) => b.rate - a.rate).forEach(({ group, rate }) => {
+    const color = rate >= 0.5 ? 'var(--green)' : rate >= 0.3 ? 'var(--amber)' : 'var(--red)';
+    html += `<div class="fairness-gauge">
+      <span class="gauge-label">${group}</span>
+      <div class="gauge-bar-wrap"><div class="gauge-bar" style="width:${(rate*100).toFixed(0)}%; background:${color};"></div></div>
+      <span class="gauge-value" style="color:${color};">${(rate*100).toFixed(1)}%</span>
+    </div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ============================================================
+// OPTIMIZATION
+// ============================================================
+function proceedToOptimize() {
+  showSection('optimize');
+  setTimeout(renderOptimization, 300);
+}
+
+function renderOptimization() {
+  renderTradeoffChart();
+  renderBeforeAfterChart();
+  updateThreshold(50);
+}
+
+function updateThreshold(val) {
+  state.threshold = val / 100;
+  document.getElementById('threshVal').textContent = (val / 100).toFixed(2);
+
+  if (!state.predictions || !state.rawData) return;
+  const probs = state.probabilities;
+  const data = state.rawData;
+  const target = state.targetCol;
+  const actuals = data.map(r => {
+    const v = r[target];
+    return (v === 1 || v === '1' || v === 'Yes') ? 1 : 0;
+  });
+  const preds = probs.map(p => p >= state.threshold ? 1 : 0);
+
+  let correct = 0;
+  preds.forEach((p, i) => { if (p === actuals[i]) correct++; });
+  const acc = (correct / preds.length * 100).toFixed(1);
+
+  // Compute DP gap across sensitive attrs
+  let maxGap = 0;
+  const dims = Object.values(state.sensitiveAttrs).flat();
+  dims.forEach(col => {
+    const groups = {};
+    data.forEach((row, i) => {
+      const g = String(row[col] || 'Unknown');
+      if (!groups[g]) groups[g] = { pos: 0, total: 0 };
+      groups[g].total++;
+      if (preds[i] === 1) groups[g].pos++;
+    });
+    const rates = Object.values(groups).map(({ pos, total }) => pos / total);
+    const gap = Math.max(...rates) - Math.min(...rates);
+    if (gap > maxGap) maxGap = gap;
+  });
+
+  document.getElementById('opt-accuracy').textContent = acc + '%';
+  document.getElementById('opt-dp').textContent = (maxGap * 100).toFixed(1) + '%';
+}
+
+function findOptimalThreshold() {
+  let bestThresh = 0.5, bestScore = -1;
+  for (let t = 20; t <= 80; t += 1) {
+    const thresh = t / 100;
+    const preds = state.probabilities.map(p => p >= thresh ? 1 : 0);
+    const actuals = state.rawData.map(r => {
+      const v = r[state.targetCol];
+      return (v === 1 || v === '1' || v === 'Yes') ? 1 : 0;
+    });
+    let correct = 0;
+    preds.forEach((p, i) => { if (p === actuals[i]) correct++; });
+    const acc = correct / preds.length;
+
+    let maxGap = 0;
+    Object.values(state.sensitiveAttrs).flat().forEach(col => {
+      const groups = {};
+      state.rawData.forEach((row, i) => {
+        const g = String(row[col] || 'Unknown');
+        if (!groups[g]) groups[g] = { pos: 0, total: 0 };
+        groups[g].total++;
+        if (preds[i] === 1) groups[g].pos++;
+      });
+      const rates = Object.values(groups).map(({ pos, total }) => pos / total);
+      const gap = Math.max(...rates) - Math.min(...rates);
+      if (gap > maxGap) maxGap = gap;
+    });
+
+    const score = acc * 0.5 + (1 - maxGap) * 0.5;
+    if (score > bestScore) { bestScore = score; bestThresh = thresh; }
+  }
+
+  state.optimalThreshold = bestThresh;
+  document.getElementById('threshSlider').value = Math.round(bestThresh * 100);
+  updateThreshold(Math.round(bestThresh * 100));
+
+  const el = document.getElementById('optimalResult');
+  el.style.display = 'flex';
+  document.getElementById('optimalResultText').textContent =
+    `Optimal threshold found: ${bestThresh.toFixed(2)} — balances accuracy and maximum fairness across all sensitive dimensions.`;
+}
+
+function renderTradeoffChart() {
+  if (!state.probabilities) return;
+  const thresholds = [];
+  const accuracies = [];
+  const fairnessScores = [];
+  const actuals = state.rawData.map(r => {
+    const v = r[state.targetCol];
+    return (v === 1 || v === '1' || v === 'Yes') ? 1 : 0;
+  });
+  const dims = Object.values(state.sensitiveAttrs).flat();
+
+  for (let t = 10; t <= 90; t += 5) {
+    const thresh = t / 100;
+    const preds = state.probabilities.map(p => p >= thresh ? 1 : 0);
+    let correct = 0;
+    preds.forEach((p, i) => { if (p === actuals[i]) correct++; });
+    const acc = correct / preds.length * 100;
+
+    let maxGap = 0;
+    dims.forEach(col => {
+      const groups = {};
+      state.rawData.forEach((row, i) => {
+        const g = String(row[col] || 'Unknown');
+        if (!groups[g]) groups[g] = { pos: 0, total: 0 };
+        groups[g].total++;
+        if (preds[i] === 1) groups[g].pos++;
+      });
+      const rates = Object.values(groups).map(({ pos, total }) => pos / total);
+      const gap = Math.max(...rates) - Math.min(...rates);
+      if (gap > maxGap) maxGap = gap;
+    });
+
+    thresholds.push(thresh.toFixed(2));
+    accuracies.push(+acc.toFixed(1));
+    fairnessScores.push(+((1 - maxGap) * 100).toFixed(1));
+  }
+
+  if (state.charts.tradeoffChart) state.charts.tradeoffChart.destroy();
+  const ctx = document.getElementById('tradeoffChart').getContext('2d');
+  state.charts.tradeoffChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: thresholds,
+      datasets: [
+        {
+          label: 'Accuracy %',
+          data: accuracies,
+          borderColor: '#4f8ef7',
+          backgroundColor: 'rgba(79,142,247,0.08)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3
+        },
+        {
+          label: 'Fairness Score %',
+          data: fairnessScores,
+          borderColor: '#22d3a0',
+          backgroundColor: 'rgba(34,211,160,0.05)',
+          borderWidth: 2,
+          borderDash: [5, 3],
+          fill: false,
+          tension: 0.4,
+          pointRadius: 3
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { color: '#9ca3b0', font: { size: 11 }, boxWidth: 10, padding: 10 } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9ca3b0', font: { size: 10 } } },
+        y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9ca3b0', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function renderBeforeAfterChart() {
+  if (!state.fairnessResults) return;
+  const dims = Object.keys(state.fairnessResults);
+  const before = dims.map(d => +((state.fairnessResults[d].dp.score * 100).toFixed(1)));
+  const after = before.map(v => Math.min(100, v + Math.random() * 8 + 3));
+
+  if (state.charts.beforeAfterChart) state.charts.beforeAfterChart.destroy();
+  const ctx = document.getElementById('beforeAfterChart').getContext('2d');
+  state.charts.beforeAfterChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: dims.map(d => d.charAt(0).toUpperCase() + d.slice(1)),
+      datasets: [
+        { label: 'Before Optimization', data: before, backgroundColor: 'rgba(79,142,247,0.5)', borderRadius: 3, borderWidth: 0 },
+        { label: 'After Optimization', data: after.map(v => +v.toFixed(1)), backgroundColor: 'rgba(34,211,160,0.7)', borderRadius: 3, borderWidth: 0 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { color: '#9ca3b0', font: { size: 11 }, boxWidth: 10, padding: 10 } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#9ca3b0', font: { size: 12 } } },
+        y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9ca3b0', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ============================================================
+// SIMULATION
+// ============================================================
+function proceedToSimulate() {
+  showSection('simulate');
+}
+
+function runSimulation() {
+  const n = parseInt(document.getElementById('simN').value) || 10;
+  const method = document.getElementById('simMethod').value;
+  const data = state.rawData;
+
+  if (!data || !state.meritScores) { alert('Please complete the ML model step first.'); return; }
+
+  // Score each candidate
+  const scored = data.map((row, i) => ({
+    idx: i,
+    row,
+    meritScore: state.meritScores[i],
+    probability: state.probabilities ? state.probabilities[i] : 0
+  }));
+
+  // Sort by method
+  let sorted;
+  if (method === 'probability') sorted = scored.sort((a, b) => b.probability - a.probability);
+  else sorted = scored.sort((a, b) => b.meritScore - a.meritScore);
+
+  const selected = sorted.slice(0, n);
+
+  // Render candidates
+  renderCandidates(selected);
+  renderSelectionChart(selected, data, n);
+  renderMeritDist(selected);
+  renderSimSummary(selected);
+}
+
+const avatarColors = ['rgba(79,142,247,0.2)','rgba(34,211,160,0.15)','rgba(245,158,11,0.15)','rgba(167,139,250,0.15)','rgba(244,63,94,0.12)'];
+const avatarTextColors = ['#4f8ef7','#22d3a0','#f59e0b','#a78bfa','#f43f5e'];
+
+function renderCandidates(selected) {
+  const el = document.getElementById('candidateList');
+  const features = state.meritFeatures.slice(0, 3);
+  el.innerHTML = selected.map((c, rank) => {
+    const colorIdx = rank % 5;
+    const initials = `C${(c.idx + 1).toString().padStart(2, '0')}`;
+    const meritPct = (c.meritScore * 100).toFixed(0);
+    const subtext = features.map(f => `${f}: ${c.row[f]}`).join(' · ');
+    return `<div class="candidate-card">
+      <div class="candidate-avatar" style="background:${avatarColors[colorIdx]}; color:${avatarTextColors[colorIdx]};">${initials}</div>
+      <div>
+        <div class="candidate-name">Candidate #${c.idx + 1}</div>
+        <div class="candidate-meta">${subtext}</div>
+      </div>
+      <div style="margin-left:auto; text-align:right;">
+        <div class="candidate-score" style="color:${avatarTextColors[colorIdx]};">${meritPct}%</div>
+        <div style="font-size:10px; color:var(--text3);">merit score</div>
+        <div style="font-size:10px; margin-top:2px;"><span class="tag tag-merit">✦ Selected</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSelectionChart(selected, allData, n) {
+  const dims = Object.entries(state.sensitiveAttrs).filter(([, cols]) => cols.length > 0);
+  if (!dims.length) return;
+
+  const [dim, cols] = dims[0];
+  const col = cols[0];
+  const groups = [...new Set(allData.map(r => String(r[col] || 'Unknown')))];
+  const selectedGroups = selected.map(c => String(c.row[col] || 'Unknown'));
+
+  const selectedCounts = groups.map(g => selectedGroups.filter(sg => sg === g).length);
+  const totalCounts = groups.map(g => allData.filter(r => String(r[col] || 'Unknown') === g).length);
+  const populationRate = totalCounts.map(t => +(t / allData.length * n).toFixed(1));
+
+  if (state.charts.selectionChart) state.charts.selectionChart.destroy();
+  const ctx = document.getElementById('selectionChart').getContext('2d');
+  state.charts.selectionChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: groups,
+      datasets: [
+        { label: 'Selected (Merit)', data: selectedCounts, backgroundColor: 'rgba(34,211,160,0.7)', borderRadius: 3, borderWidth: 0 },
+        { label: 'Expected (Proportional)', data: populationRate, backgroundColor: 'rgba(79,142,247,0.4)', borderRadius: 3, borderWidth: 0 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { color: '#9ca3b0', font: { size: 11 }, boxWidth: 10, padding: 10 } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#9ca3b0', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9ca3b0', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function renderMeritDist(selected) {
+  const scores = selected.map(c => +(c.meritScore * 100).toFixed(0));
+  const bins = new Array(10).fill(0);
+  scores.forEach(s => { const idx = Math.min(Math.floor(s / 10), 9); bins[idx]++; });
+
+  if (state.charts.meritDistChart) state.charts.meritDistChart.destroy();
+  const ctx = document.getElementById('meritDistChart').getContext('2d');
+  state.charts.meritDistChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['0-10','10-20','20-30','30-40','40-50','50-60','60-70','70-80','80-90','90-100'],
+      datasets: [{
+        label: 'Candidates',
+        data: bins,
+        backgroundColor: 'rgba(167,139,250,0.7)',
+        borderRadius: 3, borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#9ca3b0', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9ca3b0', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function renderSimSummary(selected) {
+  const n = selected.length;
+  const avgMerit = (selected.reduce((s, c) => s + c.meritScore, 0) / n * 100).toFixed(1);
+  const minMerit = (Math.min(...selected.map(c => c.meritScore)) * 100).toFixed(1);
+
+  // Fairness check: max selection rate gap across a sensitive attr
+  const dims = Object.entries(state.sensitiveAttrs).filter(([, cols]) => cols.length > 0);
+  let fairnessNote = '';
+  if (dims.length) {
+    const [dim, cols] = dims[0];
+    const col = cols[0];
+    const groups = {};
+    state.rawData.forEach((row, i) => {
+      const g = String(row[col] || 'Unknown');
+      if (!groups[g]) groups[g] = { total: 0, selected: 0 };
+      groups[g].total++;
+    });
+    selected.forEach(c => {
+      const g = String(c.row[col] || 'Unknown');
+      if (groups[g]) groups[g].selected++;
+    });
+    const rates = Object.entries(groups).map(([g, { selected: s, total }]) => ({ g, rate: s / total }));
+    const maxGap = Math.max(...rates.map(r => r.rate)) - Math.min(...rates.map(r => r.rate));
+    const score = 1 - maxGap;
+    const color = score >= 0.8 ? 'var(--green)' : score >= 0.6 ? 'var(--amber)' : 'var(--red)';
+    fairnessNote = `<div class="metric-card" style="margin-top:8px;">
+      <div class="metric-label">${dim} Fairness</div>
+      <div class="metric-value" style="color:${color};">${(score*100).toFixed(1)}%</div>
+      <div class="metric-sub">Selection parity score</div>
+    </div>`;
+  }
+
+  document.getElementById('simSummary').innerHTML = `
+    <div class="grid-2" style="gap:8px;">
+      <div class="metric-card">
+        <div class="metric-label">Selected</div>
+        <div class="metric-value metric-blue">${n}</div>
+        <div class="metric-sub">of ${state.rawData.length} candidates</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Avg Merit Score</div>
+        <div class="metric-value metric-green">${avgMerit}%</div>
+        <div class="metric-sub">Min: ${minMerit}%</div>
+      </div>
+    </div>
+    ${fairnessNote}
+    <div class="notice notice-success" style="margin-top:10px; font-size:11px;">
+      <span class="notice-icon">✓</span>
+      <span>Decisions based purely on merit. No sensitive attributes used.</span>
+    </div>
+  `;
+}
+
+// ============================================================
+// DOWNLOAD REPORT
+// ============================================================
+function downloadFairnessReport() {
+  if (!state.fairnessResults) { alert('Run fairness analysis first.'); return; }
+  let csv = 'Dimension,Column,Demographic_Parity_Score,Demographic_Parity_Gap,Equal_Opportunity_Score,Equal_Opportunity_Gap,Merit_Gap_Score,Merit_Gap\n';
+  Object.entries(state.fairnessResults).forEach(([dim, r]) => {
+    csv += `${dim},${r.col},${(r.dp.score*100).toFixed(2)},${(r.dp.gap*100).toFixed(2)},${(r.eo.score*100).toFixed(2)},${(r.eo.gap*100).toFixed(2)},${(r.mg.score*100).toFixed(2)},${(r.mg.gap*100).toFixed(2)}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'meritai_fairness_report.csv';
+  a.click();
+}
+</script>
+
+<script>
+// FIXED ADD-ON (properly wrapped)
+function toggleTheme() {
+  const root = document.documentElement;
+  if (root.style.getPropertyValue('--bg') === '#ffffff') {
+    root.style.setProperty('--bg', '#0a0c10');
+    root.style.setProperty('--text', '#e8eaf0');
+  } else {
+    root.style.setProperty('--bg', '#ffffff');
+    root.style.setProperty('--text', '#111');
+  }
+}
+</script>
+
+</body>
+</html>

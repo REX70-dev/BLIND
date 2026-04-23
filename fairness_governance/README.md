@@ -60,7 +60,7 @@ Use these deployment settings:
 
 - Repository: `REX70-dev/BLIND`
 - Branch: `main`
-- Main file path: `fairness_governance/app.py`
+- Main file path: `app.py`
 - Python version: `3.12`
 
 Set Python 3.12 from the Streamlit Cloud app's **Advanced settings**. If the

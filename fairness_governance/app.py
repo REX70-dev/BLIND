@@ -71,23 +71,12 @@ def load_uci_adult() -> pd.DataFrame:
 
 def load_dataset() -> pd.DataFrame:
     st.sidebar.header("Dataset")
-    source = st.sidebar.radio(
-        "Choose dataset",
-        ["Adult-style Demo Dataset", "UCI Adult (Recommended - has 'sex')"],
-        index=1,
-    )
+    uploaded = st.sidebar.file_uploader("Upload CSV dataset", type=["csv"])
+    if uploaded is not None:
+        st.sidebar.success("CSV uploaded")
+        return pd.read_csv(uploaded)
 
-    if source == "UCI Adult (Recommended - has 'sex')":
-        try:
-            df = load_uci_adult()
-            st.sidebar.success("Loaded UCI Adult dataset (real benchmark sample)")
-            return df
-        except Exception as exc:
-            st.sidebar.warning(f"Could not load UCI Adult online: {exc}")
-            st.sidebar.info("Falling back to generated Adult-style demo dataset.")
-            return make_sample_credit_data()
-
-    st.sidebar.info("Using generated Adult-style demo dataset.")
+    st.sidebar.info("No CSV uploaded. Using Adult-style demo dataset.")
     return make_sample_credit_data()
 
 
